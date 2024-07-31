@@ -55,14 +55,14 @@ def save_plot_as_png(images_with_filenames, titles, max_images=9, target_file_na
     nrows = int(np.ceil(num_images / ncols))
 
     plt.figure(figsize=(ncols * 5, nrows * 5), dpi=100)
-    font_size = np.ceil(48 / ncols)
+    font_size = np.ceil(48 / (ncols + 1))
     for i, ((image, filename), title) in enumerate(zip(sorted_images_with_filenames, sorted_titles)):
         plt.subplot(nrows, ncols, i + 1)
         plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
         plt.title(title, fontweight='bold', fontsize=font_size)
         plt.axis('off')
         plt.gca().add_patch(
-            plt.Rectangle((0, 0), image.shape[1], image.shape[0], linewidth=1, edgecolor='black', facecolor='none'))
+            plt.Rectangle((0, 0), image.shape[1], image.shape[0], linewidth=3, edgecolor='black', facecolor='none'))
 
     output_filename = target_file_name if target_file_name else os.path.basename(
         sorted_images_with_filenames[0][1]).replace('P.png', '_output').replace('.pdf', '_output')
