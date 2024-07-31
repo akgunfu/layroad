@@ -1,6 +1,13 @@
 import cv2
 import numpy as np
 
+# Constants for processing steps
+ENHANCE_CONTRAST = 'EC'
+BLUR = 'BL'
+EDGE_DETECTION = 'ED'
+THRESHOLD = 'TH'
+UPSCALE = 'US'
+
 
 def combined_contrast_enhancement(gray_image):
     """

@@ -76,7 +76,7 @@ are clustered by size or distance, and the results are visualized and saved as P
 - **image_pipeline.py**: Contains the core functions for processing images using different configurations.
 - **utils.py**: Utility functions for creating directories and ranking images.
 - **file_utils.py**: Functions for loading images from the `assets` folder and saving the plot as a PNG file.
-- **edge_detection.py**: Contains the `EdgeDetection` class that handles the edge detection and rectangle drawing logic.
+- **rectangle_detection.py**: Contains the `RectangleDetection` class that handles the rectangle detection and rectangle drawing logic.
 - **clustering.py**: Functions for clustering rectangles by size or distance.
 - **image_processing.py**: Functions for various image processing techniques such as enhancing contrast, blurring,
   thresholding, and upscaling.
@@ -93,7 +93,7 @@ are clustered by size or distance, and the results are visualized and saved as P
 
 3. **Processing Images**:
     - Each image is processed using the generated configurations.
-    - Edge detection and rectangle detection are performed.
+    - Rectangle detection are performed.
     - Rectangles are clustered by size or distance.
 
 4. **Visualization and Saving**:

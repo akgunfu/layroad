@@ -2,15 +2,15 @@ import concurrent.futures
 
 import cv2
 
-from edge_detection import EdgeDetection
+from rectangle_detection import RectangleDetection
 
 
 def process_single_config(original_image, gray_image, config):
     """
     Process a single image configuration and return the result.
     """
-    edge_detection = EdgeDetection(gray_image, original_image, config)
-    intermediate_images, config_labels, num_rectangles, num_clusters = edge_detection.process()
+    edge_detection = RectangleDetection(gray_image, original_image, config)
+    intermediate_images, _, num_rectangles, num_clusters = edge_detection.process()
     final_image = intermediate_images[-1]
 
     steps_label = f"{'->'.join(config['steps'])}"

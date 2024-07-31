@@ -2,78 +2,58 @@ import cv2
 import numpy as np
 
 from clustering import cluster_rectangles
+from image_processing import ENHANCE_CONTRAST, BLUR, EDGE_DETECTION, THRESHOLD, UPSCALE
 from image_processing import combined_contrast_enhancement, apply_blur, apply_adaptive_threshold, upscale_image
 
 
-class EdgeDetection:
-    EC = 'EC'  # Enhance Contrast
-    BL = 'BL'  # Blur
-    ED = 'ED'  # Edge Detection
-    TH = 'TH'  # Threshold
-    US = 'US'  # Upscale
+class RectangleDetection:
 
     def __init__(self, gray_image, original_image, config):
-        """
-        Initialize with grayscale and original images, and configuration.
-        """
         self.gray_image = gray_image
         self.original_image = original_image
         self.config = config
         self.upscale_factor = 1
-        self.area_factor = 10000  # Updated area factor
+        self.area_factor = 10000
+        self.cluster_mode = 'distance'
 
     def process(self):
-        """
-        Detect edges and draw rectangles based on configuration.
-        """
         intermediate_images, labels = self._apply_steps()
-
-        # Calculate Min Area
         height, width = self.original_image.shape[:2]
         min_area = round(width * height / self.area_factor)
-
-        # Find and filter rectangles
         rectangles = self._find_rectangles(intermediate_images[-1], min_area)
-
-        # Apply clustering if applicable
         if len(rectangles) > 1:
-            clustered_rectangles = cluster_rectangles(rectangles, mode='distance')
+            clustered_rectangles = cluster_rectangles(rectangles, self.cluster_mode)
         else:
             clustered_rectangles = [(x, y, w, h, 0) for (x, y, w, h) in rectangles]
-
         final_image = self._draw_rectangles(clustered_rectangles)
         intermediate_images.append(final_image)
         labels.append(self._get_label(self.config['steps']))
         num_clusters = len(set([rect[-1] for rect in clustered_rectangles]))
-
         return intermediate_images, labels, len(clustered_rectangles), num_clusters
 
     def _apply_steps(self):
-        """
-        Apply image processing steps based on configuration.
-        """
         image = self.gray_image
         intermediate_images = [self.original_image, self.gray_image]
         labels = ['Original Image', 'Grayscale Image']
 
         for step in self.config['steps']:
-            if step == EdgeDetection.EC:
+            if step == ENHANCE_CONTRAST:
                 image = combined_contrast_enhancement(image)
                 intermediate_images.append(image)
                 labels.append('Enhanced Contrast Image')
-            elif step == EdgeDetection.BL:
+            elif step == BLUR:
                 image = apply_blur(image, self.config.get('blur_kernel_size', (5, 5)))
                 intermediate_images.append(image)
                 labels.append('Blurred Image')
-            elif step == EdgeDetection.ED:
+            elif step == EDGE_DETECTION:
                 image = self._detect_edges(image)
                 intermediate_images.append(image)
                 labels.append('Edges Image')
-            elif step == EdgeDetection.TH:
+            elif step == THRESHOLD:
                 image = apply_adaptive_threshold(image)
                 intermediate_images.append(image)
                 labels.append('Thresholded Image')
-            elif step == EdgeDetection.US:
+            elif step == UPSCALE:
                 image = upscale_image(image, 2)
                 self.upscale_factor *= 2
                 intermediate_images.append(image)
@@ -83,18 +63,12 @@ class EdgeDetection:
 
     @staticmethod
     def _detect_edges(image):
-        """
-        Detect edges using the Canny edge detection algorithm.
-        """
         median_val = np.median(image)
         lower = int(max(0, 0.24 * median_val))
         upper = int(min(255, 0.96 * median_val))
         return cv2.Canny(image, lower, upper)
 
     def _find_rectangles(self, image, area_threshold):
-        """
-        Find rectangles from contours.
-        """
         adjusted_area_threshold = area_threshold * (self.upscale_factor ** 2)
         contours, _ = cv2.findContours(image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         rectangles = []
@@ -105,14 +79,12 @@ class EdgeDetection:
                 if len(approx) == 4:
                     (x, y, w, h) = cv2.boundingRect(approx)
                     ratio = max(w, h) / min(w, h)
-                    if ratio < 3:
-                        rectangles.append((x, y, w, h))
+                    if ratio >= 3:
+                        continue
+                    rectangles.append((x, y, w, h))
         return rectangles
 
     def _draw_rectangles(self, clustered_rectangles, thickness=2):
-        """
-        Draw rectangles on the image based on clusters.
-        """
         image_with_rectangles = cv2.cvtColor(self.gray_image, cv2.COLOR_GRAY2BGR)
         if not clustered_rectangles:
             return image_with_rectangles
@@ -128,7 +100,6 @@ class EdgeDetection:
                 cluster_sizes[cluster] = size
                 cluster_counts[cluster] = 1
         cluster_avg_sizes = {cluster: cluster_sizes[cluster] / cluster_counts[cluster] for cluster in cluster_sizes}
-
         avg_sizes = list(cluster_avg_sizes.values())
         min_avg_size, max_avg_size = min(avg_sizes), max(avg_sizes)
 
@@ -154,7 +125,4 @@ class EdgeDetection:
 
     @staticmethod
     def _get_label(steps):
-        """
-        Generate a label by joining the steps with '->'.
-        """
         return '->'.join(steps)
