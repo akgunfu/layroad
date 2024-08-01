@@ -2,64 +2,64 @@ import concurrent.futures
 
 import cv2
 
-from rectangle_detection import RectangleDetection
 from edge_connect import EdgeConnect
+from rectangle_detection import RectangleDetector
 
 
-class ImageProcessResponse:
-    def __init__(self, original_image, edge_image, label, rectangles, lines, upscale_factor):
+class ProcessedImage:
+    def __init__(self, original_image, edge_image, label, rects, lines, upscale_factor):
+        """Initialize the processed image with results."""
         self.original_image = original_image
         self.edge_image = edge_image
         self.label = label
+        self.rects = rects
         self.upscale_factor = upscale_factor
-        self.rectangles = rectangles
-        self.upscaled_rectangles = self.update_rectangles_for_scaling(rectangles, upscale_factor)
+        self.upscaled_rects = self._scale_rectangles(rects, upscale_factor)
         self.lines = lines
-        self.num_rectangles = len(rectangles)
+        self.num_rects = len(rects)
 
     @staticmethod
-    def update_rectangles_for_scaling(rectangles, upscale_factor):
+    def _scale_rectangles(rectangles, factor):
+        """Update rectangles for scaling."""
         updated = []
         for (x, y, w, h, cluster) in rectangles:
-            if upscale_factor != 1:
-                x = int(x / upscale_factor)
-                y = int(y / upscale_factor)
-                w = int(w / upscale_factor)
-                h = int(h / upscale_factor)
+            if factor != 1:
+                x = int(x / factor)
+                y = int(y / factor)
+                w = int(w / factor)
+                h = int(h / factor)
             updated.append((x, y, w, h, cluster))
         return updated
 
 
-def process_single_config(original_image, gray_image, config):
-    """
-    Process a single image configuration and return the result.
-    """
-    edge_detection = RectangleDetection(gray_image, original_image, config)
-    edge_image, rectangles, upscale_factor = edge_detection.process()
-    lines = EdgeConnect().create_direct_connect_lines(rectangles, edge_image)
+def _process_single_config(original_image, gray_image, config):
+    """Process a single image configuration."""
+    detector = RectangleDetector(gray_image, original_image, config)
+    edge_image, rects, upscale_factor = detector.detect()
+    lines = EdgeConnect().create_lines(rects, edge_image)
 
     steps_label = f"{'->'.join(config['steps'])}"
-    cluster_count_label = f"Clusters: {len(set([rect[-1] for rect in rectangles]))}"
-    rect_count_label = f"Detected: {len(rectangles)}"
+    clusters_label = f"Clusters: {len(set([rect[-1] for rect in rects]))}"
+    rects_label = f"Detected: {len(rects)}"
     height, width = original_image.shape[:2]
-    dimension_label = f"Dimensions: {width}x{height} px"
-    image_dimension = width * height
+    dims_label = f"Dimensions: {width}x{height} px"
     area_factor = 10000
-    min_area_label = f"Threshold: {image_dimension / area_factor} px^2"
-    label = f"{steps_label}\n{cluster_count_label} - {rect_count_label}\n{min_area_label}\n{dimension_label}"
+    min_area_label = f"Threshold: {width * height / area_factor} px^2"
+    label = f"{steps_label}\n{clusters_label} - {rects_label}\n{min_area_label}\n{dims_label}"
 
-    return ImageProcessResponse(original_image, edge_image, label, rectangles, lines, upscale_factor)
+    return ProcessedImage(original_image, edge_image, label, rects, lines, upscale_factor)
 
 
-def process_image(image_with_filename, configs):
-    """
-    Process a single image with all configurations in parallel and return the results.
-    """
-    original_image, filename = image_with_filename
+def process_image(image_file, configs):
+    """Process a single image with all configurations in parallel."""
+    original_image, filename = image_file
     gray_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2GRAY)
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        futures = [executor.submit(process_single_config, original_image, gray_image, config) for config in configs]
+        futures = [executor.submit(_process_single_config, original_image, gray_image, config) for config in configs]
         results = [future.result() for future in concurrent.futures.as_completed(futures)]
+
+    # Sort results based on the number of rectangles detected
+    results.sort(key=lambda x: x.num_rects, reverse=True)
 
     return filename, results

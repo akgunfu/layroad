@@ -7,37 +7,33 @@ BLUR = 'BL'
 EDGE_DETECTION = 'ED'
 THRESHOLD = 'TH'
 UPSCALE = 'US'
+GAMMA = 1.2
+CLAHE_CLIP_LIMIT = 2.0
+CLAHE_TILE_GRID_SIZE = (5, 5)
+BLUR_KERNEL_SIZE = (5, 5)
+THRESHOLD_MAX_VALUE = 255
 
 
-def combined_contrast_enhancement(gray_image):
-    """
-    Enhance contrast using multiple techniques for better results.
-    """
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(5, 5))
-    enhanced_image = clahe.apply(gray_image)
+def enhance_contrast(image):
+    """Enhance contrast using multiple techniques."""
+    clahe = cv2.createCLAHE(clipLimit=CLAHE_CLIP_LIMIT, tileGridSize=CLAHE_TILE_GRID_SIZE)
+    enhanced_image = clahe.apply(image)
     enhanced_image = cv2.equalizeHist(enhanced_image)
-    inv_gamma = 1.0 / 1.2
+    inv_gamma = 1.0 / GAMMA
     table = np.array([(i / 255.0) ** inv_gamma * 255 for i in np.arange(0, 256)]).astype("uint8")
-    enhanced_image = cv2.LUT(enhanced_image, table)
-    return cv2.normalize(enhanced_image, None, 0, 255, cv2.NORM_MINMAX)
+    return cv2.LUT(enhanced_image, table)
 
 
-def apply_adaptive_threshold(image):
-    """
-    Enhance edges using adaptive thresholding.
-    """
-    return cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+def adaptive_threshold(image):
+    """Apply adaptive thresholding."""
+    return cv2.adaptiveThreshold(image, THRESHOLD_MAX_VALUE, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
 
 
-def upscale_image(image, scale=2):
-    """
-    Upscale the image.
-    """
+def upscale(image, scale=2):
+    """Upscale the image."""
     return cv2.resize(image, (0, 0), fx=scale, fy=scale)
 
 
-def apply_blur(image, kernel_size=(5, 5)):
-    """
-    Reduce noise and improve edge detection with Gaussian blur.
-    """
+def blur(image, kernel_size=BLUR_KERNEL_SIZE):
+    """Apply Gaussian blur to reduce noise."""
     return cv2.GaussianBlur(image, kernel_size, 0)

@@ -2,6 +2,11 @@ import numpy as np
 from kneed import KneeLocator
 from sklearn.cluster import KMeans
 
+# Constants
+MAX_CLUSTERS = 15
+MIN_CLUSTERS = 3
+OUTLIER_STD_MULTIPLIER = 2
+
 
 def cluster_rectangles(rectangles, mode='size'):
     """Cluster rectangles by size or distance."""
@@ -10,9 +15,9 @@ def cluster_rectangles(rectangles, mode='size'):
 
     rectangles = _remove_outliers(rectangles)
 
-    if mode == 'size':
+    if mode == 'size':  # Cluster by size
         return _cluster_by_size(rectangles)
-    elif mode == 'distance':
+    elif mode == 'distance':  # Cluster by distance
         return _cluster_by_distance(rectangles)
     else:
         raise ValueError("Invalid mode. Choose either 'size' or 'distance'.")
@@ -24,7 +29,8 @@ def _remove_outliers(rectangles):
     mean_size = np.mean(sizes)
     std_size = np.std(sizes)
     return [(x, y, w, h) for (x, y, w, h) in rectangles if
-            (mean_size - 2 * std_size) <= (w * h) <= (mean_size + 2 * std_size)]
+            (mean_size - OUTLIER_STD_MULTIPLIER * std_size) <= (w * h) <= (
+                        mean_size + OUTLIER_STD_MULTIPLIER * std_size)]
 
 
 def _cluster_by_size(rectangles):
@@ -45,17 +51,17 @@ def _cluster_by_distance(rectangles):
     return _create_clustered_rectangles(rectangles, labels)
 
 
-def _determine_optimal_clusters(data, max_clusters=15, min_clusters=3):
+def _determine_optimal_clusters(data):
     """Determine the optimal number of clusters using the elbow method."""
     distortions = []
-    K = range(1, max_clusters + 1)
+    K = range(1, MAX_CLUSTERS + 1)
     for k in K:
         kmeans = KMeans(n_clusters=k)
         kmeans.fit(data)
         distortions.append(kmeans.inertia_)
     kneedle = KneeLocator(K, distortions, curve='convex', direction='decreasing')
     optimal_clusters = kneedle.elbow if kneedle.elbow else 1
-    return max(min(min_clusters, len(data)), optimal_clusters)
+    return max(min(MIN_CLUSTERS, len(data)), optimal_clusters)
 
 
 def _create_clustered_rectangles(rectangles, labels):
@@ -72,10 +78,10 @@ def filter_contained_rectangles(rectangles):
         x, y, w, h = rect
         contained = False
         for other in rectangles:
-            if rect == other:
+            if rect == other:  # Skip self-comparison
                 continue
             ox, oy, ow, oh = other
-            if x >= ox and y >= oy and x + w <= ox + ow and y + h <= oy + oh:
+            if x >= ox and y >= oy and x + w <= ox + ow and y + h <= oy + oh:  # Check if rect is contained
                 contained = True
                 break
         if not contained:
