@@ -36,49 +36,45 @@ class EdgeConnect:
 
     @staticmethod
     def _x_intersects(rect1, rect2):
-        """Check if x ranges of two rectangles intersect."""
-        x1, _, w1, _, _ = rect1
-        x2, _, w2, _, _ = rect2
-        return max(x1, x2) < min(x1 + w1, x2 + w2)
+        """Check if x ranges of two rectangles intersect"""
+        return max(rect1.x, rect2.x) < min(rect1.x + rect1.w, rect2.x + rect2.w)
 
     @staticmethod
     def _y_intersects(rect1, rect2):
-        """Check if y ranges of two rectangles intersect."""
-        _, y1, _, h1, _ = rect1
-        _, y2, _, h2, _ = rect2
-        return max(y1, y2) < min(y1 + h1, y2 + h2)
+        """Check if y ranges of two rectangles intersect"""
+        return max(rect1.y, rect2.y) < min(rect1.y + rect1.h, rect2.y + rect2.h)
 
     def _vertical_line(self, rect1, rect2):
-        """Get vertical line between two rectangles."""
-        x1, y1, w1, h1, _ = rect1
-        x2, y2, w2, h2, _ = rect2
-
-        intersect_x_start, intersect_x_end = max(x1, x2), min(x1 + w1, x2 + w2)
+        """Get adjusted points to draw a vertical line just outside the target rectangles."""
+        # Calculate the midpoint of the intersecting range
+        intersect_x_start, intersect_x_end = max(rect1.x, rect2.x), min(rect1.x + rect1.w, rect2.x + rect2.w)
         midpoint_x = (intersect_x_start + intersect_x_end) // 2
 
-        distance_y = max(y1, y2) - min(y1 + h1, y2 + h2)
+        # Calculate the distance between the closest vertical edges of the rectangles
+        distance_y = max(rect1.y, rect2.y) - min(rect1.y + rect1.h, rect2.y + rect2.h)
         if distance_y < self.min_line_length:
             return None
-
-        point1 = (midpoint_x, y1 + h1 + self.discontinuity) if y1 < y2 else (midpoint_x, y1 - self.discontinuity)
-        point2 = (midpoint_x, y2 + h2 + self.discontinuity) if y2 < y1 else (midpoint_x, y2 - self.discontinuity)
+        point1 = (midpoint_x, rect1.y + rect1.h + self.discontinuity) if rect1.y < rect2.y else (
+            midpoint_x, rect1.y - self.discontinuity)
+        point2 = (midpoint_x, rect2.y + rect2.h + self.discontinuity) if rect2.y < rect1.y else (
+            midpoint_x, rect2.y - self.discontinuity)
 
         return Line(point1, point2)
 
     def _horizontal_line(self, rect1, rect2):
-        """Get horizontal line between two rectangles."""
-        x1, y1, w1, h1, _ = rect1
-        x2, y2, w2, h2, _ = rect2
-
-        intersect_y_start, intersect_y_end = max(y1, y2), min(y1 + h1, y2 + h2)
+        """Get adjusted points to draw a horizontal line just outside the target rectangles."""
+        # Calculate the midpoint of the intersecting range
+        intersect_y_start, intersect_y_end = max(rect1.y, rect2.y), min(rect1.y + rect1.h, rect2.y + rect2.h)
         midpoint_y = (intersect_y_start + intersect_y_end) // 2
 
-        distance_x = max(x1, x2) - min(x1 + w1, x2 + w2)
+        # Calculate the distance between the closest horizontal edges of the rectangles
+        distance_x = max(rect1.x, rect2.x) - min(rect1.x + rect1.w, rect2.x + rect2.w)
         if distance_x < self.min_line_length:
             return None
-
-        point1 = (x1 + w1 + self.discontinuity, midpoint_y) if x1 < x2 else (x1 - self.discontinuity, midpoint_y)
-        point2 = (x2 + w2 + self.discontinuity, midpoint_y) if x2 < x1 else (x2 - self.discontinuity, midpoint_y)
+        point1 = (rect1.x + rect1.w + self.discontinuity, midpoint_y) if rect1.x < rect2.x else (
+            rect1.x - self.discontinuity, midpoint_y)
+        point2 = (rect2.x + rect2.w + self.discontinuity, midpoint_y) if rect2.x < rect1.x else (
+            rect2.x - self.discontinuity, midpoint_y)
 
         return Line(point1, point2)
 
@@ -94,8 +90,7 @@ class EdgeConnect:
         for rect in rects:
             if rect == rect1 or rect == rect2:
                 continue
-            rx, ry, rw, rh, _ = rect
-            if not ((x1 > rx + rw or x2 < rx) or (y1 > ry + rh or y2 < ry)):  # Check for intersection
+            if not ((x1 > rect.x + rect.w or x2 < rect.x) or (y1 > rect.y + rect.h or y2 < rect.y)):
                 return False
         return True
 

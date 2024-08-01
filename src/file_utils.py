@@ -17,7 +17,7 @@ COLOR_LINE = (255, 255, 0)
 
 def load_images(folder_path='assets'):
     """Load images from the assets folder."""
-    images_with_filenames = []
+    imgs_with_names = []
     for filename in os.listdir(folder_path):
         if filename.lower().endswith(PDF_EXTENSION):
             add_homebrew_path()
@@ -26,15 +26,15 @@ def load_images(folder_path='assets'):
                 pages = convert_from_path(os.path.join(folder_path, filename), dpi=PDF_DPI)
                 image = np.array(pages[0])
                 image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-                images_with_filenames.append((image, filename))
+                imgs_with_names.append((image, filename))
             except Exception as e:
                 raise RuntimeError(f"Failed to load PDF file. Error: {e}")
         elif filename.lower().endswith(IMAGE_EXTENSIONS):
             image = cv2.imread(os.path.join(folder_path, filename))
             if image is None:
                 raise FileNotFoundError(f"Image not found: {os.path.join(folder_path, filename)}")
-            images_with_filenames.append((image, filename))
-    return images_with_filenames
+            imgs_with_names.append((image, filename))
+    return imgs_with_names
 
 
 def save_results(results, max_images=9, target_file_name=None):
@@ -52,9 +52,9 @@ def save_results(results, max_images=9, target_file_name=None):
     plt.figure(figsize=(num_cols * 5, num_rows * 5), dpi=300)
     font_size = np.ceil(48 / (num_cols + 1))
     for i, result in enumerate(results[:max_images]):
-        overlay = cv2.cvtColor(result.edge_image, cv2.COLOR_BGR2RGB)
-        for (x, y, w, h, cluster_id) in result.rects:
-            cv2.rectangle(overlay, (x, y), (x + w, y + h), COLOR_RECTANGLE, -1)
+        overlay = cv2.cvtColor(result.edge_img, cv2.COLOR_BGR2RGB)
+        for rect in result.rects:
+            cv2.rectangle(overlay, (rect.x, rect.y), (rect.x + rect.w, rect.y + rect.h), COLOR_RECTANGLE, -1)
 
         for line in result.lines:
             cv2.line(overlay, line.start, line.end, COLOR_LINE, 3)  # Cyan lines, thickness 3

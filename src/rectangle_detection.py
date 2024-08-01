@@ -10,65 +10,134 @@ AREA_FACTOR = 10000
 CONTOUR_APPROX_EPSILON = 0.01
 
 
+class Rectangle:
+    def __init__(self, id, x, y, w, h):
+        """Initialize a Rectangle with given attributes."""
+        self.id = id
+        self.x = x
+        self.y = y
+        self.w = w
+        self.h = h
+        self.cluster = None
+        self.links = []
+
+    def __iter__(self):
+        """Allow unpacking rectangle attributes."""
+        return iter((self.x, self.y, self.w, self.h))
+
+    def add_link(self, other_id):
+        """Add a link to another rectangle."""
+        if other_id not in self.links:
+            self.links.append(other_id)
+
+    def set_cluster(self, cluster):
+        """Set the cluster ID for the rectangle."""
+        self.cluster = cluster
+
+    def is_identical(self, other):
+        """Check if two rectangles have the same dimensions and position."""
+        return (self.x == other.x and self.y == other.y and
+                self.w == other.w and self.h == other.h)
+
+    def is_nested_within(self, other):
+        """Check if this rectangle is nested within another rectangle."""
+        return (self.x >= other.x and self.y >= other.y and
+                self.x + self.w <= other.x + other.w and
+                self.y + self.h <= other.y + other.h)
+
+
 class RectangleDetector:
-    def __init__(self, gray_image, original_image, config):
+    def __init__(self, gray_img, original_img, config):
         """Initialize the RectangleDetector class."""
-        self.gray_image = gray_image
-        self.original_image = original_image
-        self.edge_image = None
+        self.gray_img = gray_img
+        self.original_img = original_img
+        self.edge_img = None
         self.config = config
         self.upscale_factor = 1
-        height, width = self.original_image.shape[:2]
+        height, width = self.original_img.shape[:2]
         self.min_area = round(width * height / AREA_FACTOR)
         self.cluster_mode = 'distance'
 
     def detect(self):
         """Process the image to detect and cluster rectangles."""
-        processed_image = self._apply_steps()
-        self.edge_image = self._detect_edges(processed_image)
-        rectangles = self._find_rectangles(self.edge_image)
-        if len(rectangles) > 1:
-            clustered_rectangles = cluster_rectangles(rectangles, self.cluster_mode)
+        processed_img = self._apply_steps()
+        self.edge_img = self._detect_edges(processed_img)
+        rects = self._find_rects(self.edge_img)
+        rects = self._filter_nested_rectangles(rects)
+        rects = self._remove_outliers(rects)
+        if len(rects) > 1:
+            rects = cluster_rectangles(rects, self.cluster_mode)
         else:
-            clustered_rectangles = [(x, y, w, h, 0) for (x, y, w, h) in rectangles]
-        return self.edge_image, clustered_rectangles, self.upscale_factor
+            for rect in rects:
+                rect.set_cluster(0)
+        return self.edge_img, rects, self.upscale_factor
 
     def _apply_steps(self):
         """Apply configured processing steps to the grayscale image."""
-        image = self.gray_image
+        img = self.gray_img
         for step in self.config['steps']:
             if step == ENHANCE_CONTRAST:
-                image = enhance_contrast(image)
+                img = enhance_contrast(img)
             elif step == BLUR:
-                image = blur(image, self.config.get('blur_kernel_size', (5, 5)))
+                img = blur(img, self.config.get('blur_kernel_size', (5, 5)))
             elif step == THRESHOLD:
-                image = adaptive_threshold(image)
+                img = adaptive_threshold(img)
             elif step == UPSCALE:
-                image = upscale(image, 2)
+                img = upscale(img, 2)
                 self.upscale_factor *= 2
-        return image
+        return img
 
     @staticmethod
-    def _detect_edges(image):
+    def _detect_edges(img):
         """Detect edges using the Canny edge detection algorithm."""
-        median_val = np.median(image)
+        median_val = np.median(img)
         lower = int(max(0, 0.24 * median_val))
         upper = int(min(255, 0.96 * median_val))
-        return cv2.Canny(image, lower, upper)
+        return cv2.Canny(img, lower, upper)
 
-    def _find_rectangles(self, image):
+    def _find_rects(self, img):
         """Find rectangles in the edge-detected image."""
-        adjusted_area_threshold = self.min_area * (self.upscale_factor ** 2)
-        contours, _ = cv2.findContours(image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        rectangles = []
-        for contour in contours:
-            if cv2.contourArea(contour) > adjusted_area_threshold:
-                epsilon = CONTOUR_APPROX_EPSILON * cv2.arcLength(contour, True)
-                approx = cv2.approxPolyDP(contour, epsilon, True)
+        area_threshold = self.min_area * (self.upscale_factor ** 2)
+        contours, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        rects = []
+        for idx, contour in enumerate(contours):
+            if cv2.contourArea(contour) > area_threshold:
+                eps = CONTOUR_APPROX_EPSILON * cv2.arcLength(contour, True)
+                approx = cv2.approxPolyDP(contour, eps, True)
                 if len(approx) == 4:
                     (x, y, w, h) = cv2.boundingRect(approx)
                     ratio = max(w, h) / min(w, h)
                     if ratio >= 3:
                         continue
-                    rectangles.append((x, y, w, h))
-        return rectangles
+                    rects.append(Rectangle(id=idx, x=x, y=y, w=w, h=h))
+        return rects
+
+    @staticmethod
+    def _remove_outliers(rects):
+        """Remove outlier rectangles based on size."""
+        sizes = np.array([rect.w * rect.h for rect in rects])
+        mean_size = np.mean(sizes)
+        std_size = np.std(sizes)
+        return [rect for rect in rects if (mean_size - 2 * std_size) <= (rect.w * rect.h) <= (mean_size + 2 * std_size)]
+
+    @staticmethod
+    def _filter_nested_rectangles(rects):
+        """Filter out rectangles that are nested within other rectangles"""
+        filtered_rects = []
+        for i, rect in enumerate(rects):
+            is_nested = False
+            for j, other in enumerate(rects):
+                if i == j:  # Skip self-comparison by comparing indices
+                    continue
+                if rect.is_identical(other):
+                    if i < j:  # Skip the second occurrence
+                        continue
+                    else:
+                        is_nested = True
+                        break
+                if rect.is_nested_within(other):
+                    is_nested = True
+                    break
+            if not is_nested:
+                filtered_rects.append(rect)
+        return filtered_rects
