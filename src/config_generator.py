@@ -10,7 +10,7 @@ FAVORITES_ = [[UPSCALE, THRESHOLD, UPSCALE, ENHANCE_CONTRAST, EDGE_DETECTION],
 
 def generate_configs(use_favorites=True):
     if use_favorites:
-        return [{'steps': config} for config in FAVORITES_]
+        return [{'steps': config} for config in [FAVORITES_[0]]]
     else:
         return [{'steps': config} for config in _get_combinatorial_configs()]
 
