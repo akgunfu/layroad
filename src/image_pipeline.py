@@ -41,8 +41,8 @@ def _process_single_config(filename, original_img, gray_img, config):
     detector = RectangleDetector(gray_img, original_img, config)
     edge_img, rects, upscale_factor = detector.detect()
     print(f"{ICON_DETECTED} [Detection] Detected {len(rects)} rectangles for image {filename} with config {config}")
-    lines = EdgeConnect().create_lines(rects, edge_img)
-    print(f"{ICON_DETECTED} [Detection] Detected {len(lines)} rectangles for image {filename} with config {config}")
+    lines = EdgeConnect(edge_img, rects, upscale_factor).create_lines()
+    print(f"{ICON_DETECTED} [Detection] Detected {len(lines)} lines for image {filename} with config {config}")
 
     steps_label = f"{'->'.join(config['steps'])}"
     clusters_label = f"Clusters: {len(set([rect.cluster for rect in rects]))}"

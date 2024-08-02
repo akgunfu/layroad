@@ -8,7 +8,7 @@ from pdf2image import convert_from_path
 from utils import add_homebrew_path, ICON_STARTING, ICON_ERROR, ICON_COMPLETED
 
 # Constants
-PDF_DPI = 300
+PDF_DPI = 500
 PNG_EXTENSION = '.png'
 PDF_EXTENSION = '.pdf'
 JPEG_EXTENSION = '.jpeg'
@@ -63,7 +63,7 @@ def save_results(results, max_images=9, target_file_name=DEFAULT_OUTPUT_FILE):
         return
     num_cols = int(np.ceil(np.sqrt(max_images)))
     num_rows = int(np.ceil(num_images / num_cols))
-    plt.figure(figsize=(num_cols * 5, num_rows * 5), dpi=300)
+    plt.figure(figsize=(num_cols * 4, num_rows * 4), dpi=PDF_DPI)
     font_size = np.ceil(48 / (num_cols + 1))
 
     for i, result in enumerate(filtered_results):

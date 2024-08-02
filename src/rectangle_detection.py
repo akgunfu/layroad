@@ -6,7 +6,7 @@ from image_processing import ENHANCE_CONTRAST, BLUR, THRESHOLD, UPSCALE, enhance
     upscale
 
 # Constants
-AREA_FACTOR = 10000
+AREA_FACTOR = 9600
 CONTOUR_APPROX_EPSILON = 0.01
 
 
@@ -23,6 +23,10 @@ class Rectangle:
     def __iter__(self):
         """Allow unpacking rectangle attributes."""
         return iter((self.x, self.y, self.w, self.h))
+
+    def size(self):
+        """Calculate the size of the rectangle."""
+        return self.w * self.h
 
     def set_cluster(self, cluster):
         """Set the cluster ID for the rectangle."""
@@ -57,8 +61,8 @@ class RectangleDetector:
         processed_img = self._apply_steps()
         self.edge_img = self._detect_edges(processed_img)
         rects = self._find_rects(self.edge_img)
-        rects = self._filter_nested_rectangles(rects)
         rects = self._remove_outliers(rects)
+        rects = self._filter_nested_rectangles(rects)
         if len(rects) > 1:
             rects = cluster_rectangles(rects, self.cluster_mode)
         else:
@@ -95,7 +99,8 @@ class RectangleDetector:
         contours, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         rects = []
         for idx, contour in enumerate(contours):
-            if cv2.contourArea(contour) > area_threshold:
+            contour_area = cv2.contourArea(contour)
+            if area_threshold < contour_area < 4 * area_threshold:
                 eps = CONTOUR_APPROX_EPSILON * cv2.arcLength(contour, True)
                 approx = cv2.approxPolyDP(contour, eps, True)
                 if len(approx) == 4:
