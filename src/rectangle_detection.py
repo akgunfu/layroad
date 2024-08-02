@@ -43,6 +43,33 @@ class Rectangle:
                 self.x + self.w <= other.x + other.w and
                 self.y + self.h <= other.y + other.h)
 
+    def intersects(self, other, axis):
+        """Check if ranges of two rectangles intersect based on the specified axis."""
+        if axis == 'x':
+            return max(self.x, other.x) < min(self.x + self.w, other.x + other.w)
+        else:
+            return max(self.y, other.y) < min(self.y + self.h, other.y + other.h)
+
+    def get_intersection_range(self, other, axis):
+        """Get the overlapping range on the specified axis."""
+        if axis == 'x':
+            start = max(self.x, other.x)
+            end = min(self.x + self.w, other.x + other.w)
+        else:
+            start = max(self.y, other.y)
+            end = min(self.y + self.h, other.y + other.h)
+        return start, end
+
+    def get_bounding_range(self, other, axis, discontinuity):
+        """Get the bounding range between two rectangles on the specified axis."""
+        if axis == 'x':
+            bound_start = min(self.y + self.h, other.y + other.h) + discontinuity
+            bound_end = max(self.y, other.y) - discontinuity
+        else:
+            bound_start = min(self.x + self.w, other.x + other.w) + discontinuity
+            bound_end = max(self.x, other.x) - discontinuity
+        return bound_start, bound_end
+
 
 class RectangleDetector:
     def __init__(self, gray_img, original_img, config):

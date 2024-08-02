@@ -1,5 +1,11 @@
 DISCONTINUITY = 5
-MIN_LINE_LENGTH = 20
+MIN_LINE_LENGTH = 50
+
+
+class Point:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
 
 
 class Line:
@@ -7,17 +13,20 @@ class Line:
         self.start = start
         self.end = end
 
+    def length(self):
+        return ((self.end.x - self.start.x) ** 2 + (self.end.y - self.start.y) ** 2) ** 0.5
+
 
 class EdgeConnect:
     def __init__(self, edge_img, rectangles, discontinuity=DISCONTINUITY, min_line_length=MIN_LINE_LENGTH,
                  upscale_factor=1):
-        """Initialize with edge image, rectangles, specified discontinuity and minimum line length."""
+        """Initialize with edge image, rectangles, specified discontinuity, and minimum line length."""
         self.edge_img = edge_img
         self.rectangles = rectangles
         self.discontinuity = discontinuity * upscale_factor
         self.min_line_length = min_line_length * upscale_factor
 
-    def create_lines(self):
+    def connect(self):
         """Create direct connect lines between rectangles."""
         lines = []
         for i in range(len(self.rectangles)):
@@ -25,70 +34,44 @@ class EdgeConnect:
                 rect1 = self.rectangles[i]
                 rect2 = self.rectangles[j]
 
-                if self._x_intersects(rect1, rect2):  # Check for x-range intersection
-                    subranges = self._find_uninterrupted_subranges(rect1, rect2, vertical=True)
-                    for start, end in subranges:
-                        midpoint_x = (start + end) // 2
-                        line = self._vertical_line(midpoint_x, rect1, rect2)
-                        if line:
-                            lines.append(line)
+                if rect1.intersects(rect2, axis='x'):
+                    lines.extend(self._generate_lines(rect1, rect2, axis='x'))
 
-                if self._y_intersects(rect1, rect2):  # Check for y-range intersection
-                    subranges = self._find_uninterrupted_subranges(rect1, rect2, vertical=False)
-                    for start, end in subranges:
-                        midpoint_y = (start + end) // 2
-                        line = self._horizontal_line(midpoint_y, rect1, rect2)
-                        if line:
-                            lines.append(line)
+                if rect1.intersects(rect2, axis='y'):
+                    lines.extend(self._generate_lines(rect1, rect2, axis='y'))
 
         return lines
 
-    @staticmethod
-    def _x_intersects(rect1, rect2):
-        """Check if x ranges of two rectangles intersect"""
-        return max(rect1.x, rect2.x) < min(rect1.x + rect1.w, rect2.x + rect2.w)
+    def _generate_lines(self, rect1, rect2, axis):
+        """Generate lines between two rectangles based on the specified axis."""
+        lines = []
+        subranges = self._find_uninterrupted_subranges(rect1, rect2, axis)
+        for start, end in subranges:
+            midpoint = (start + end) // 2
+            point1, point2 = self._get_points(midpoint, rect1, rect2, axis)
+            line = Line(point1, point2)
+            if line and line.length() >= self.min_line_length:
+                lines.append(line)
+        return lines
 
     @staticmethod
-    def _y_intersects(rect1, rect2):
-        """Check if y ranges of two rectangles intersect"""
-        return max(rect1.y, rect2.y) < min(rect1.y + rect1.h, rect2.y + rect2.h)
+    def _get_points(midpoint, rect1, rect2, axis):
+        """Get adjusted points for a line just outside the target rectangles."""
+        if axis == 'x':
+            point1 = Point(midpoint, rect1.y + rect1.h) if rect1.y < rect2.y else Point(midpoint, rect1.y)
+            point2 = Point(midpoint, rect2.y + rect2.h) if rect2.y < rect1.y else Point(midpoint, rect2.y)
+        else:
+            point1 = Point(rect1.x + rect1.w, midpoint) if rect1.x < rect2.x else Point(rect1.x, midpoint)
+            point2 = Point(rect2.x + rect2.w, midpoint) if rect2.x < rect1.x else Point(rect2.x, midpoint)
+        return point1, point2
 
-    def _vertical_line(self, midpoint_x, rect1, rect2):
-        """Get adjusted points to draw a vertical line just outside the target rectangles."""
-        # Calculate the distance between the closest vertical edges of the rectangles
-        distance_y = max(rect1.y, rect2.y) - min(rect1.y + rect1.h, rect2.y + rect2.h)
-        if distance_y < self.min_line_length:
-            return None
-        point1 = (midpoint_x, rect1.y + rect1.h) if rect1.y < rect2.y else (midpoint_x, rect1.y)
-        point2 = (midpoint_x, rect2.y + rect2.h) if rect2.y < rect1.y else (midpoint_x, rect2.y)
-
-        return Line(point1, point2)
-
-    def _horizontal_line(self, midpoint_y, rect1, rect2):
-        """Get adjusted points to draw a horizontal line just outside the target rectangles."""
-        # Calculate the distance between the closest horizontal edges of the rectangles
-        distance_x = max(rect1.x, rect2.x) - min(rect1.x + rect1.w, rect2.x + rect2.w)
-        if distance_x < self.min_line_length:
-            return None
-        point1 = (rect1.x + rect1.w, midpoint_y) if rect1.x < rect2.x else (rect1.x, midpoint_y)
-        point2 = (rect2.x + rect2.w, midpoint_y) if rect2.x < rect1.x else (rect2.x, midpoint_y)
-
-        return Line(point1, point2)
-
-    def _find_uninterrupted_subranges(self, rect1, rect2, vertical=True):
+    def _find_uninterrupted_subranges(self, rect1, rect2, axis):
+        """Find uninterrupted subranges between two rectangles, considering obstacles."""
         subranges = []
         in_uninterrupted_range = True
 
-        if vertical:
-            start = max(rect1.x, rect2.x)
-            end = min(rect1.x + rect1.w, rect2.x + rect2.w)
-            bound_start = min(rect1.y + rect1.h, rect2.y + rect2.h) + self.discontinuity
-            bound_end = max(rect1.y, rect2.y) - self.discontinuity
-        else:
-            start = max(rect1.y, rect2.y)
-            end = min(rect1.y + rect1.h, rect2.y + rect2.h)
-            bound_start = min(rect1.x + rect1.w, rect2.x + rect2.w) + self.discontinuity
-            bound_end = max(rect1.x, rect2.x) - self.discontinuity
+        start, end = rect1.get_intersection_range(rect2, axis)
+        bound_start, bound_end = rect1.get_bounding_range(rect2, axis, self.discontinuity)
 
         if end <= start or bound_end <= bound_start:
             return subranges
@@ -96,16 +79,10 @@ class EdgeConnect:
         current_start = start
 
         for i in range(start, end + 1):
-            if vertical:
-                column_has_obstacle = (self.edge_img[bound_start:bound_end, i] == 255).any()
-            else:
-                row_has_obstacle = (self.edge_img[i, bound_start:bound_end] == 255).any()
-
-            if (vertical and column_has_obstacle) or (not vertical and row_has_obstacle):
-                if in_uninterrupted_range:
-                    if i - current_start >= self.discontinuity:
-                        subranges.append((current_start, i - 1))
-                    in_uninterrupted_range = False
+            if self._has_obstacle(self.edge_img, i, bound_start, bound_end, axis):
+                if in_uninterrupted_range and i - current_start >= self.discontinuity:
+                    subranges.append((current_start, i - 1))
+                in_uninterrupted_range = False
             else:
                 if not in_uninterrupted_range:
                     current_start = i
@@ -115,3 +92,11 @@ class EdgeConnect:
             subranges.append((current_start, end))
 
         return subranges
+
+    @staticmethod
+    def _has_obstacle(edge_img, pos, bound_start, bound_end, axis):
+        """Check for obstacles in the specified range."""
+        if axis == 'x':
+            return (edge_img[bound_start:bound_end, pos] == 255).any()
+        else:
+            return (edge_img[pos, bound_start:bound_end] == 255).any()
