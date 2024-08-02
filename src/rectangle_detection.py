@@ -19,16 +19,10 @@ class Rectangle:
         self.w = w
         self.h = h
         self.cluster = None
-        self.links = []
 
     def __iter__(self):
         """Allow unpacking rectangle attributes."""
         return iter((self.x, self.y, self.w, self.h))
-
-    def add_link(self, other_id):
-        """Add a link to another rectangle."""
-        if other_id not in self.links:
-            self.links.append(other_id)
 
     def set_cluster(self, cluster):
         """Set the cluster ID for the rectangle."""
