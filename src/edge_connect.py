@@ -18,16 +18,16 @@ class Line:
 
 
 class EdgeConnect:
-    def __init__(self, edge_img, rectangles, discontinuity=DISCONTINUITY, min_line_length=MIN_LINE_LENGTH,
-                 upscale_factor=1):
+    def __init__(self, edge_img, rectangles, upscale_factor):
         """Initialize with edge image, rectangles, specified discontinuity, and minimum line length."""
         self.edge_img = edge_img
         self.rectangles = rectangles
-        self.discontinuity = discontinuity * upscale_factor
-        self.min_line_length = min_line_length * upscale_factor
+        self.discontinuity = DISCONTINUITY * upscale_factor
+        self.min_line_length = MIN_LINE_LENGTH * upscale_factor
 
     def connect(self):
         """Create direct connect lines between rectangles."""
+        print(self.discontinuity, self.min_line_length)
         lines = []
         for i in range(len(self.rectangles)):
             for j in range(i + 1, len(self.rectangles)):
