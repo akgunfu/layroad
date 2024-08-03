@@ -53,6 +53,12 @@ python main.py -i <input_directory> -o <output_directory> -m <max_images> -f <fi
 
 ### Example
 
+Bare usage
+
+```bash
+python main.py
+```
+
 To process images from the `assets` directory and save the results to the `outputs` directory:
 
 ```bash
@@ -105,3 +111,6 @@ The server script, `server.py`, allows for uploading and processing files via a 
       ```bash
       brew install poppler
       ```
+
+2. **Error: `FileNotFoundError: Image not found`**
+    - Solution: Ensure the image file paths are correct and the files exist in the specified directory.
