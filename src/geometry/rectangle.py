@@ -1,9 +1,11 @@
+import json
 from typing import Tuple
 
 from .point import Point
+from .shape import Shape
 
 
-class Rectangle:
+class Rectangle(Shape):
     def __init__(self, idx: int, x: int, y: int, w: int, h: int):
         """Initialize a Rectangle with given attributes."""
         self.id = idx
@@ -12,6 +14,7 @@ class Rectangle:
         self.w = w
         self.h = h
         self.cluster = None
+        self.links = []
 
     def __iter__(self):
         """Allow unpacking rectangle attributes."""
@@ -28,6 +31,9 @@ class Rectangle:
     def set_cluster(self, cluster):
         """Set the cluster ID for the rectangle."""
         self.cluster = cluster
+
+    def add_links(self, links):
+        self.links.update(links)
 
     def is_identical(self, other: 'Rectangle') -> bool:
         """Check if two rectangles have the same dimensions and position."""
@@ -66,3 +72,15 @@ class Rectangle:
             bound_start = min(self.x + self.w, other.x + other.w) + discontinuity
             bound_end = max(self.x, other.x) - discontinuity
         return bound_start, bound_end
+
+    def to_json(self):
+        """Return a JSON string representation of the rectangle."""
+        return json.dumps({
+            'type': 'rectangle',
+            'id': self.id,
+            'x': self.x,
+            'y': self.y,
+            'w': self.w,
+            'h': self.h,
+            'links': self.links
+        })

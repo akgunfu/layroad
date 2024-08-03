@@ -1,8 +1,11 @@
+import json
+
 from .point import Point
 from .rectangle import Rectangle
+from .shape import Shape
 
 
-class Line:
+class Line(Shape):
     def __init__(self, start: Point, end: Point):
         self.start = start
         self.end = end
@@ -33,3 +36,14 @@ class Line:
                 self.intersects(Line(Point(rect.x, rect.y), Point(rect.x, rect.y + rect.h))) or
                 self.intersects(Line(Point(rect.x + rect.w, rect.y), Point(rect.x + rect.w, rect.y + rect.h))) or
                 self.intersects(Line(Point(rect.x, rect.y + rect.h), Point(rect.x + rect.w, rect.y + rect.h))))
+
+    def to_json(self):
+        """Return a JSON string representation of the line."""
+        return json.dumps({
+            'type': 'line',
+            'id': 1,  # todo add id to class later
+            'start_x': self.start.x,
+            'start_y': self.start.y,
+            'end_x': self.end.x,
+            'end_y': self.end.y
+        })

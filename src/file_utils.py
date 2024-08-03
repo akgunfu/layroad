@@ -1,10 +1,12 @@
 import os
+from typing import List
 
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from pdf2image import convert_from_path
 
+from src.geometry.shape import Shape
 from utils import add_homebrew_path, Icon, TextColor
 
 # Constants
@@ -14,6 +16,7 @@ PNG_EXTENSION = '.png'
 PDF_EXTENSION = '.pdf'
 JPEG_EXTENSION = '.jpeg'
 JPG_EXTENSION = '.jpg'
+JSON_EXTENSION = '.json'
 DEFAULT_OUTPUT_FILE = 'output.png'
 IMAGE_EXTENSIONS = (PNG_EXTENSION, JPG_EXTENSION, JPEG_EXTENSION)
 COLOR_RECTANGLE = (255, 0, 0)
@@ -52,7 +55,7 @@ def load_images(folder_path='assets', num_files=DEFAULT_NUM_FILES):
     return images_with_names
 
 
-def save_results(results, max_images=9, target_file_name=DEFAULT_OUTPUT_FILE):
+def save_result_images(results, max_images=9, target_file_name=DEFAULT_OUTPUT_FILE):
     """Save a plot of the processed images as a PNG file."""
     filtered_results = results[:max_images]
     if target_file_name.lower().endswith(PDF_EXTENSION):
@@ -78,7 +81,7 @@ def save_results(results, max_images=9, target_file_name=DEFAULT_OUTPUT_FILE):
         plt.title(result.label, fontsize=font_size)
         plt.axis('off')
 
-    output_path = os.path.join('outputs', output_filename)
+    output_path = os.path.join('outputs/images', output_filename)
     plt.tight_layout()
     plt.subplots_adjust(hspace=0.3, wspace=0.3)  # Adjust the horizontal and vertical padding
     plt.savefig(output_path)
@@ -108,3 +111,19 @@ def _draw_objects(overlay, rects, lines):
     for line in lines:
         cv2.line(overlay, (line.start.x, line.start.y), (line.end.x, line.end.y), COLOR_LINE, LINE_THICKNESS)
     return overlay
+
+
+def save_result_shapes(shapes: List[Shape], target_file_name):
+    if target_file_name.lower().endswith(PDF_EXTENSION):
+        output_filename = target_file_name.replace(PDF_EXTENSION, JSON_EXTENSION)
+    else:
+        output_filename = target_file_name
+    print(f"{Icon.START} [Save] Saving {len(shapes)} shapes -> "
+          f"{TextColor.YELLOW}{output_filename}{TextColor.RESET} ...")
+    output_path = os.path.join('outputs/shapes', output_filename)
+    with open(output_path, 'w') as file:
+        for shape in shapes:
+            json_str = shape.to_json()
+            file.write(json_str + '\n')
+    print(f"{Icon.DONE} [Save] Saved {len(shapes)} shapes ->"
+          f" {TextColor.CYAN}{output_filename}{TextColor.RESET}")
