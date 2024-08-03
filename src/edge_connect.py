@@ -2,7 +2,7 @@ from typing import List, Tuple
 
 import cv2.typing
 
-from .geometry import Line, Point, Rectangle
+from .geometry import Line, Point, Rectangle, Shape
 
 DISCONTINUITY = 5  # must be > 0 , or else all lines could be filtered out
 MIN_LINE_LENGTH = 50
@@ -17,12 +17,12 @@ class EdgeConnect:
         self.min_line_length = MIN_LINE_LENGTH * upscale_factor
 
     def connect(self) -> List[Line]:
-        lines = self._create_direct_lines()
+        lines = self._create_direct_lines_between_rectangles()
         # filters
         lines.extend(self._filter_out_intersecting_lines(lines))
         return lines
 
-    def _create_direct_lines(self):
+    def _create_direct_lines_between_rectangles(self) -> List[Line]:
         """Create direct lines between rectangles."""
         lines = []
         for i in range(len(self.rectangles)):
@@ -36,35 +36,37 @@ class EdgeConnect:
                     lines.extend(self._generate_lines(rect1, rect2, axis='y'))
         return lines
 
-    def _generate_lines(self, rect1: Rectangle, rect2: Rectangle, axis) -> List[Line]:
+    def _generate_lines(self, shape1: Shape, shape2: Shape, axis) -> List[Line]:
         """Generate lines between two rectangles based on the specified axis."""
         lines = []
-        subranges = self._find_uninterrupted_subranges(rect1, rect2, axis)
+        subranges = self._find_uninterrupted_subranges(shape1, shape2, axis)
         for start, end in subranges:
             midpoint = (start + end) // 2
-            line = self._get_line(midpoint, rect1, rect2, axis)
+            line = self._get_line(midpoint, shape1, shape2, axis)
             if line and line.length() >= self.min_line_length:
                 lines.append(line)
         return lines
 
     @staticmethod
-    def _get_line(midpoint: int, rect1: Rectangle, rect2: Rectangle, axis) -> Line:
-        """Get adjusted points for a line just outside the target rectangles."""
+    def _get_line(midpoint: int, shape1: Shape, shape2: Shape, axis) -> Line:
+        """Get adjusted points for a line just outside the target shapes."""
+        start_x_1, end_x_1, start_y_1, end_y_1 = shape1.bounds()
+        start_x_2, end_x_2, start_y_2, end_y_2 = shape2.bounds()
         if axis == 'x':
-            point1 = Point(midpoint, rect1.y + rect1.h) if rect1.y < rect2.y else Point(midpoint, rect1.y)
-            point2 = Point(midpoint, rect2.y + rect2.h) if rect2.y < rect1.y else Point(midpoint, rect2.y)
+            point1 = Point(midpoint, end_y_1) if start_y_1 < start_y_2 else Point(midpoint, start_y_1)
+            point2 = Point(midpoint, end_y_2) if start_y_2 < start_y_1 else Point(midpoint, start_y_2)
         else:
-            point1 = Point(rect1.x + rect1.w, midpoint) if rect1.x < rect2.x else Point(rect1.x, midpoint)
-            point2 = Point(rect2.x + rect2.w, midpoint) if rect2.x < rect1.x else Point(rect2.x, midpoint)
+            point1 = Point(end_x_1, midpoint) if start_x_1 < start_x_2 else Point(start_x_1, midpoint)
+            point2 = Point(end_x_2, midpoint) if start_x_2 < start_x_1 else Point(start_x_2, midpoint)
         return Line(point1, point2)
 
-    def _find_uninterrupted_subranges(self, rect1: Rectangle, rect2: Rectangle, axis) -> List[Tuple[int, int]]:
+    def _find_uninterrupted_subranges(self, shape1: Shape, shape2: Shape, axis) -> List[Tuple[int, int]]:
         """Find uninterrupted subranges between two rectangles, considering obstacles."""
         subranges = []
         in_uninterrupted_range = True
 
-        start, end = rect1.get_intersection_range(rect2, axis)
-        bound_start, bound_end = rect1.get_bounding_range(rect2, axis, self.discontinuity)
+        start, end = shape1.get_intersection_range(shape2, axis)
+        bound_start, bound_end = shape1.get_bounding_range(shape2, axis, self.discontinuity)
 
         if end <= start or bound_end <= bound_start:
             return subranges

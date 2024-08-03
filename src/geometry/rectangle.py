@@ -28,12 +28,15 @@ class Rectangle(Shape):
         """Calculate the centroid (middle point) of the rectangle."""
         return Point(self.x + self.w // 2, self.y + self.h // 2)
 
+    def bounds(self) -> Tuple[int, int, int, int]:
+        return self.x, self.x + self.w, self.y, self.y + self.h
+
     def set_cluster(self, cluster):
         """Set the cluster ID for the rectangle."""
         self.cluster = cluster
 
     def add_links(self, links):
-        self.links.update(links)
+        pass
 
     def is_identical(self, other: 'Rectangle') -> bool:
         """Check if two rectangles have the same dimensions and position."""
