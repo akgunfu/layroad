@@ -4,7 +4,7 @@ import cv2.typing
 
 from .geometry import Line, Point, Rectangle
 
-DISCONTINUITY = 5
+DISCONTINUITY = 5  # must be > 0 , or else all lines could be filtered out
 MIN_LINE_LENGTH = 50
 
 
@@ -17,7 +17,13 @@ class EdgeConnect:
         self.min_line_length = MIN_LINE_LENGTH * upscale_factor
 
     def connect(self) -> List[Line]:
-        """Create direct connect lines between rectangles."""
+        lines = self._create_direct_lines()
+        # filters
+        lines.extend(self._filter_out_intersecting_lines(lines))
+        return lines
+
+    def _create_direct_lines(self):
+        """Create direct lines between rectangles."""
         lines = []
         for i in range(len(self.rectangles)):
             for j in range(i + 1, len(self.rectangles)):
@@ -25,14 +31,9 @@ class EdgeConnect:
                 rect2 = self.rectangles[j]
 
                 if rect1.intersects(rect2, axis='x'):
-                    candidate_lines = self._generate_lines(rect1, rect2, axis='x')
+                    lines.extend(self._generate_lines(rect1, rect2, axis='x'))
                 elif rect1.intersects(rect2, axis='y'):
-                    candidate_lines = self._generate_lines(rect1, rect2, axis='y')
-                else:
-                    candidate_lines = []
-
-                lines.extend(self._filter_out_intersecting_lines(candidate_lines, rect1, rect2))
-
+                    lines.extend(self._generate_lines(rect1, rect2, axis='y'))
         return lines
 
     def _generate_lines(self, rect1: Rectangle, rect2: Rectangle, axis) -> List[Line]:
@@ -93,15 +94,13 @@ class EdgeConnect:
         else:
             return (edge_img[pos, bound_start:bound_end] == 255).any()
 
-    def _filter_out_intersecting_lines(self, candidate_lines: List[Line],
-                                       rect1: Rectangle, rect2: Rectangle) -> List[Line]:
+    def _filter_out_intersecting_lines(self, candidate_lines: List[Line]) -> List[Line]:
         """Filter out lines that intersect with any other rectangle."""
-        return [line for line in candidate_lines if not self._line_intersects_any_rectangle(line, rect1, rect2)]
+        return [line for line in candidate_lines if not self._line_intersects_any_rectangle(line)]
 
-    def _line_intersects_any_rectangle(self, line: Line, rect1: Rectangle, rect2: Rectangle) -> bool:
+    def _line_intersects_any_rectangle(self, line: Line) -> bool:
         """Check if a line intersects with any rectangle other than rect1 and rect2."""
         for rect in self.rectangles:
-            if rect is not rect1 and rect is not rect2:
-                if line.intersects_rectangle(rect):
-                    return True
+            if line.intersects_rectangle(rect):
+                return True
         return False
