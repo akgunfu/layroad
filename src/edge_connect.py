@@ -17,9 +17,12 @@ class EdgeConnect:
         self.min_line_length = MIN_LINE_LENGTH * upscale_factor
 
     def connect(self) -> List[Line]:
-        lines = self._create_direct_lines_between_rectangles()
-        # filters
-        lines.extend(self._filter_out_intersecting_lines(lines))
+        lines = self._create_direct_lines_between_rectangles()  # rect->rect connection lines
+        # todo create line->line connection lines
+        # todo create rect->line connection lines
+        # todo create line intersection nodes
+        # todo prune very close near identical lines
+        lines.extend(self._filter_out_intersecting_lines(lines))  # edge-case filter rect overlapping lines
         return lines
 
     def _create_direct_lines_between_rectangles(self) -> List[Line]:
