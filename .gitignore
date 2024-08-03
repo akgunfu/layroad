@@ -1,6 +1,8 @@
 /.venv
+/venv
 /.idea
 /assets
 /outputs
 /processed
 /uploads
+/temp
