@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pdf2image import convert_from_path
 
-from src.geometry.shape import Shape
+from geometry.shape import Shape
 from utils import add_homebrew_path, Icon, TextColor
 
 # Constants
@@ -55,7 +55,7 @@ def load_images(folder_path='assets', num_files=DEFAULT_NUM_FILES):
     return images_with_names
 
 
-def save_result_images(results, max_images=9, target_file_name=DEFAULT_OUTPUT_FILE):
+def save_result_images(results, max_images, target_file_name):
     """Save a plot of the processed images as a PNG file."""
     filtered_results = results[:max_images]
     if target_file_name.lower().endswith(PDF_EXTENSION):
@@ -81,10 +81,9 @@ def save_result_images(results, max_images=9, target_file_name=DEFAULT_OUTPUT_FI
         plt.title(result.label, fontsize=font_size)
         plt.axis('off')
 
-    output_path = os.path.join('outputs/images', output_filename)
     plt.tight_layout()
     plt.subplots_adjust(hspace=0.3, wspace=0.3)  # Adjust the horizontal and vertical padding
-    plt.savefig(output_path)
+    plt.savefig(output_filename)
     plt.close()
     print(f"{Icon.DONE} [Save] Saved {len(filtered_results)} results ->"
           f" {TextColor.CYAN}{output_filename}{TextColor.RESET}")
@@ -120,8 +119,7 @@ def save_result_shapes(shapes: List[Shape], target_file_name):
         output_filename = target_file_name
     print(f"{Icon.START} [Save] Saving {len(shapes)} shapes -> "
           f"{TextColor.YELLOW}{output_filename}{TextColor.RESET} ...")
-    output_path = os.path.join('outputs/shapes', output_filename)
-    with open(output_path, 'w') as file:
+    with open(output_filename, 'w') as file:
         for shape in shapes:
             json_str = shape.to_json()
             file.write(json_str + '\n')
