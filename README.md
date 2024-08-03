@@ -12,27 +12,6 @@ This project aims to convert real-life maps, layouts, or floor plans into comput
 - **Clustering**: Cluster detected rectangles by size or distance using KMeans.
 - **Edge Connection**: Create connection lines between non-intersecting rectangles.
 
-## Project Structure
-
-```
-src/
-├── clustering.py
-├── rectangle_detection.py
-├── utils.py
-├── edge_connect.py
-├── file_utils.py
-├── config_generator.py
-├── main.py
-├── image_processing.py
-├── image_pipeline.py
-└── geometry/
-    ├── line.py
-    ├── __init__.py
-    ├── point.py
-    ├── rectangle.py
-    └── shape.py
-```
-
 ## Installation
 
 ### Prerequisites

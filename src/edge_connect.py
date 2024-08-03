@@ -1,6 +1,6 @@
 from typing import List, Tuple
 
-from geometry import Line, Point, Rectangle
+from .geometry import Line, Point, Rectangle
 
 DISCONTINUITY = 5
 MIN_LINE_LENGTH = 50

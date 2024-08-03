@@ -1,10 +1,10 @@
 import argparse
 import concurrent.futures
 
-from config_generator import generate_configs
-from file_utils import load_images, save_result_images, save_result_shapes
-from image_pipeline import process_image
-from utils import create_clean_output_directory, TextColor
+from src.config_generator import generate_configs
+from src.file_utils import load_images, save_result_images, save_result_shapes
+from src.image_pipeline import process_image
+from src.utils import create_clean_output_directory, TextColor
 
 
 def process_images(images_with_names, output_dir, max_images):

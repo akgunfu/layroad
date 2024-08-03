@@ -3,9 +3,9 @@ from typing import List
 import cv2
 import numpy as np
 
-from clustering import cluster_rectangles
-from geometry import Rectangle
-from image_processing import ENHANCE_CONTRAST, BLUR, THRESHOLD, UPSCALE, enhance_contrast, blur, adaptive_threshold, \
+from .clustering import cluster_rectangles
+from .geometry import Rectangle
+from .image_processing import ENHANCE_CONTRAST, BLUR, THRESHOLD, UPSCALE, enhance_contrast, blur, adaptive_threshold, \
     upscale
 
 # Constants

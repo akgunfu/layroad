@@ -2,9 +2,9 @@ import concurrent.futures
 
 import cv2
 
-from edge_connect import EdgeConnect
-from rectangle_detection import RectangleDetector, Rectangle
-from utils import Icon, TextColor
+from .edge_connect import EdgeConnect
+from .rectangle_detection import RectangleDetector, Rectangle
+from .utils import Icon, TextColor
 
 
 class ProcessedImage:

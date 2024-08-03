@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pdf2image import convert_from_path
 
-from geometry.shape import Shape
-from utils import add_homebrew_path, Icon, TextColor
+from .geometry.shape import Shape
+from .utils import add_homebrew_path, Icon, TextColor
 
 # Constants
 INPUT_DPI = 500

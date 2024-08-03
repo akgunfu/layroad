@@ -4,7 +4,7 @@ import numpy as np
 from kneed import KneeLocator
 from sklearn.cluster import KMeans
 
-from geometry import Rectangle
+from .geometry import Rectangle
 
 RANDOM_SEED = 42
 

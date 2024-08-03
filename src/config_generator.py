@@ -1,6 +1,6 @@
 import itertools
 
-from image_processing import ENHANCE_CONTRAST, BLUR, EDGE_DETECTION, THRESHOLD, UPSCALE
+from .image_processing import ENHANCE_CONTRAST, BLUR, EDGE_DETECTION, THRESHOLD, UPSCALE
 
 # Constants
 FAVORITE_CONFIGS = [
