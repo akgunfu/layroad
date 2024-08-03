@@ -1,8 +1,9 @@
 import os
 import shutil
+import uuid
 
 from apscheduler.schedulers.background import BackgroundScheduler
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory, url_for
 from werkzeug.utils import secure_filename
 
 from src.config_generator import generate_configs
@@ -66,23 +67,49 @@ def process():
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(file_path)
 
+        # Generate a unique identifier for this request
+        unique_id = str(uuid.uuid4())
+        processed_folder = os.path.join(app.config['PROCESSED_FOLDER'], unique_id)
+        os.makedirs(processed_folder, exist_ok=True)
+
         # Process the file
         try:
-            create_clean_output_directory(app.config['PROCESSED_FOLDER'])
-            images_with_names = load_images(app.config['UPLOAD_FOLDER'], num_files=1)
-            configs = generate_configs()
-            for image_with_name in images_with_names:
-                filename, results = process_image(image_with_name, configs)
-                save_result_shapes(results[0].rects + results[0].lines,
-                                   target_file_name=f"{app.config['PROCESSED_FOLDER']}/{filename}.json")
-                save_result_images(results, max_images=len(results),
-                                   target_file_name=f"{app.config['PROCESSED_FOLDER']}/{filename}.png")
-            return jsonify(message="File processed successfully", processed_file=f"{filename}.png",
-                           shapes_file=f"{filename}.json"), 200
+            create_clean_output_directory(processed_folder)
+            image_url, shapes_url = _do_process(processed_folder, unique_id)
+            return jsonify(
+                message="File processed successfully",
+                image_url=image_url,
+                shapes_url=shapes_url
+            ), 200
         except Exception as e:
+            shutil.rmtree(processed_folder)
             return jsonify(error=str(e)), 500
 
     return jsonify(error="File type not allowed"), 400
+
+
+@app.route('/processed/<unique_id>/<filename>', methods=['GET'])
+def download(unique_id, filename):
+    """Endpoint to download a processed file."""
+    folder_path = os.path.join(app.config['PROCESSED_FOLDER'], unique_id)
+    return send_from_directory(directory=folder_path, path=filename)
+
+
+def _do_process(processed_folder, unique_id):
+    images_with_names = load_images(app.config['UPLOAD_FOLDER'], num_files=1)
+    configs = generate_configs()
+    for image_with_name in images_with_names:
+        processed_filename, results = process_image(image_with_name, configs)
+        json_filename = f"{processed_filename}.json"
+        png_filename = f"{processed_filename}.png"
+        save_result_shapes(results[0].rects + results[0].lines,
+                           target_file_name=os.path.join(processed_folder, json_filename))
+        save_result_images(results, max_images=len(results),
+                           target_file_name=os.path.join(processed_folder, png_filename))
+    # Construct the download URL
+    image_url = url_for('download', unique_id=unique_id, filename=png_filename, _external=True)
+    shapes_url = url_for('download', unique_id=unique_id, filename=json_filename, _external=True)
+    return image_url, shapes_url
 
 
 @app.teardown_appcontext
