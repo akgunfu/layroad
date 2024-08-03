@@ -1,3 +1,5 @@
+from typing import List, Tuple
+
 from geometry import Line, Point, Rectangle
 
 DISCONTINUITY = 5
@@ -5,14 +7,14 @@ MIN_LINE_LENGTH = 50
 
 
 class EdgeConnect:
-    def __init__(self, edge_img, rectangles: list, upscale_factor: int):
+    def __init__(self, edge_img, rectangles: List[Rectangle], upscale_factor: int):
         """Initialize with edge image, rectangles, specified discontinuity, and minimum line length."""
         self.edge_img = edge_img
         self.rectangles = rectangles
         self.discontinuity = DISCONTINUITY * upscale_factor
         self.min_line_length = MIN_LINE_LENGTH * upscale_factor
 
-    def connect(self) -> list:
+    def connect(self) -> List[Line]:
         """Create direct connect lines between rectangles."""
         lines = []
         for i in range(len(self.rectangles)):
@@ -31,7 +33,7 @@ class EdgeConnect:
 
         return lines
 
-    def _generate_lines(self, rect1: Rectangle, rect2: Rectangle, axis) -> list:
+    def _generate_lines(self, rect1: Rectangle, rect2: Rectangle, axis) -> List[Line]:
         """Generate lines between two rectangles based on the specified axis."""
         lines = []
         subranges = self._find_uninterrupted_subranges(rect1, rect2, axis)
@@ -53,7 +55,7 @@ class EdgeConnect:
             point2 = Point(rect2.x + rect2.w, midpoint) if rect2.x < rect1.x else Point(rect2.x, midpoint)
         return Line(point1, point2)
 
-    def _find_uninterrupted_subranges(self, rect1: Rectangle, rect2: Rectangle, axis) -> list:
+    def _find_uninterrupted_subranges(self, rect1: Rectangle, rect2: Rectangle, axis) -> List[Tuple[int, int]]:
         """Find uninterrupted subranges between two rectangles, considering obstacles."""
         subranges = []
         in_uninterrupted_range = True
@@ -89,7 +91,7 @@ class EdgeConnect:
         else:
             return (edge_img[pos, bound_start:bound_end] == 255).any()
 
-    def _filter_out_intersecting_lines(self, candidate_lines: list, rect1: Rectangle, rect2: Rectangle) -> list:
+    def _filter_out_intersecting_lines(self, candidate_lines: list, rect1: Rectangle, rect2: Rectangle) -> List[Line]:
         """Filter out lines that intersect with any other rectangle."""
         return [line for line in candidate_lines if not self._line_intersects_any_rectangle(line, rect1, rect2)]
 

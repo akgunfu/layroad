@@ -1,11 +1,23 @@
 import os
 import shutil
 
-# Unicode characters for icons
-ICON_STARTING = '\u23F3'  # Hourglass
-ICON_COMPLETED = '\u2705'  # Green Checkmark
-ICON_ERROR = '\u274C'  # Red Cross
-ICON_DETECTED = '\U0001F50D'  # Magnifying Glass
+
+class Icon:
+    START = '\u23F3'  # Hourglass
+    DONE = '\u2705'  # Green Checkmark
+    ERROR = '\u274C'  # Red Cross
+    DETECT = '\U0001F50D'  # Magnifying Glass
+
+
+class TextColor:
+    RED = '\033[91m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    BLUE = '\033[94m'
+    MAGENTA = '\033[95m'
+    CYAN = '\033[96m'
+    WHITE = '\033[97m'
+    RESET = '\033[0m'
 
 
 def create_clean_output_directory(path='outputs'):

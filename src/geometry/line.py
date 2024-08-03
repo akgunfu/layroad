@@ -7,13 +7,13 @@ class Line:
         self.start = start
         self.end = end
 
-    def length(self):
+    def length(self) -> int:
         return ((self.end.x - self.start.x) ** 2 + (self.end.y - self.start.y) ** 2) ** 0.5
 
-    def intersects(self, other: 'Line'):
+    def intersects(self, other: 'Line') -> bool:
         """Check if this line intersects with another line."""
 
-        def ccw(point1, point2, point3):
+        def ccw(point1: Point, point2: Point, point3: Point) -> bool:
             """Check if the points point1, point2, and point3 are listed in a counter-clockwise order."""
             return (point3.y - point1.y) * (point2.x - point1.x) > (point2.y - point1.y) * (point3.x - point1.x)
 
@@ -22,7 +22,7 @@ class Line:
         # Two lines intersect if and only if the points p1, p2 are separated by line p3-p4 and vice versa
         return ccw(p1, p3, p4) != ccw(p2, p3, p4) and ccw(p1, p2, p3) != ccw(p1, p2, p4)
 
-    def intersects_rectangle(self, rect: 'Rectangle'):
+    def intersects_rectangle(self, rect: 'Rectangle') -> bool:
         """Check if this line intersects with a given rectangle."""
         # Check if either endpoint of the line is inside the rectangle
         if (rect.x <= self.start.x <= rect.x + rect.w and rect.y <= self.start.y <= rect.y + rect.h) or \

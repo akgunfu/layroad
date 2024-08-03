@@ -1,3 +1,5 @@
+from typing import List
+
 import cv2
 import numpy as np
 
@@ -29,12 +31,13 @@ class RectangleDetector:
         self.edge_img = self._detect_edges(processed_img)
         rects = self._find_rects(self.edge_img)
         rects = self._remove_outliers(rects)
-        rects = self._filter_nested_rectangles(rects)
+        rects = self._remove_nested_rectangles(rects)
         if len(rects) > 1:
             rects = cluster_rectangles(rects, self.cluster_mode)
         else:
             for rect in rects:
                 rect.set_cluster(0)
+        rects = self.renumber_rectangles(rects)
         return self.edge_img, rects, self.upscale_factor
 
     def _apply_steps(self):
@@ -60,11 +63,12 @@ class RectangleDetector:
         upper = int(min(255, 0.96 * median_val))
         return cv2.Canny(img, lower, upper)
 
-    def _find_rects(self, img):
+    def _find_rects(self, img) -> List[Rectangle]:
         """Find rectangles in the edge-detected image."""
         area_threshold = self.min_area * (self.upscale_factor ** 2)
         contours, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         rects = []
+        counter = 1
         for idx, contour in enumerate(contours):
             contour_area = cv2.contourArea(contour)
             if area_threshold < contour_area < 4 * area_threshold:
@@ -75,11 +79,12 @@ class RectangleDetector:
                     ratio = max(w, h) / min(w, h)
                     if ratio >= 3:
                         continue
-                    rects.append(Rectangle(id=idx, x=x, y=y, w=w, h=h))
+                    rects.append(Rectangle(idx=counter, x=x, y=y, w=w, h=h))
+                    counter += 1
         return rects
 
     @staticmethod
-    def _remove_outliers(rects):
+    def _remove_outliers(rects: List[Rectangle]) -> List[Rectangle]:
         """Remove outlier rectangles based on size."""
         sizes = np.array([rect.w * rect.h for rect in rects])
         mean_size = np.mean(sizes)
@@ -87,7 +92,7 @@ class RectangleDetector:
         return [rect for rect in rects if (mean_size - 2 * std_size) <= (rect.w * rect.h) <= (mean_size + 2 * std_size)]
 
     @staticmethod
-    def _filter_nested_rectangles(rects):
+    def _remove_nested_rectangles(rects: List[Rectangle]) -> List[Rectangle]:
         """Filter out rectangles that are nested within other rectangles"""
         filtered_rects = []
         for i, rect in enumerate(rects):
@@ -107,3 +112,12 @@ class RectangleDetector:
             if not is_nested:
                 filtered_rects.append(rect)
         return filtered_rects
+
+    @staticmethod
+    def renumber_rectangles(rects: List[Rectangle]) -> List[Rectangle]:
+        # Sort rectangles by x coordinate, then by y coordinate to easily number them
+        sorted_rectangles = sorted(rects, key=lambda rect: (rect.center().x, rect.center().y))
+        # Assign new consecutive IDs based on sorted order
+        for new_id, rect in enumerate(sorted_rectangles):
+            rect.id = new_id
+        return sorted_rectangles

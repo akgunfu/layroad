@@ -4,7 +4,7 @@ import cv2
 
 from edge_connect import EdgeConnect
 from rectangle_detection import RectangleDetector, Rectangle
-from utils import ICON_STARTING, ICON_COMPLETED, ICON_DETECTED
+from utils import Icon, TextColor
 
 
 class ProcessedImage:
@@ -37,12 +37,15 @@ class ProcessedImage:
 
 def _process_single_config(filename, original_img, gray_img, config):
     """Process a single image configuration."""
-    print(f"{ICON_STARTING} [Process] Started processing image {filename} with config {config}")
+    print(f"{Icon.START} [Process] Started processing image {TextColor.YELLOW}{filename}{TextColor.RESET} "
+          f"with config {config} ...")
     detector = RectangleDetector(gray_img, original_img, config)
     edge_img, rects, upscale_factor = detector.detect()
-    print(f"{ICON_DETECTED} [Detection] Detected {len(rects)} rectangles for image {filename} with config {config}")
+    print(f"{Icon.DETECT} [Detection] {TextColor.GREEN}Detected {len(rects)} rectangles{TextColor.RESET} "
+          f"for image {TextColor.YELLOW}{filename}{TextColor.RESET} with config {config}")
     lines = EdgeConnect(edge_img, rects, upscale_factor).connect()
-    print(f"{ICON_DETECTED} [Detection] Detected {len(lines)} lines for image {filename} with config {config}")
+    print(f"{Icon.DETECT} [Detection] {TextColor.GREEN}Detected {len(lines)} lines{TextColor.RESET} "
+          f"for image {TextColor.YELLOW}{filename}{TextColor.RESET} with config {config}")
     #
     if lines:
         smallest_line_length = min(line.length() for line in lines)
@@ -66,7 +69,8 @@ def _process_single_config(filename, original_img, gray_img, config):
     lines_label = f"Lines: {len(lines)}"
     label = f"{steps_label}\n{clusters_label}\n{rects_label} - {lines_label}\n{min_rect_label}\n{min_line_label}"
 
-    print(f"{ICON_COMPLETED} [Process] Finished processing image {filename} with config {config}")
+    print(f"{Icon.DONE} [Process] Finished processing image {TextColor.YELLOW}{filename}{TextColor.RESET} "
+          f"with config {config}")
     return ProcessedImage(original_img, edge_img, label, rects, lines, upscale_factor)
 
 
@@ -75,7 +79,7 @@ def process_image(image_file, configs):
     original_img, filename = image_file
     gray_img = cv2.cvtColor(original_img, cv2.COLOR_BGR2GRAY)
 
-    with concurrent.futures.ThreadPoolExecutor() as executor:
+    with concurrent.futures.ProcessPoolExecutor() as executor:
         futures = [executor.submit(_process_single_config, filename, original_img, gray_img, config) for config in
                    configs]
         results = [future.result() for future in concurrent.futures.as_completed(futures)]
