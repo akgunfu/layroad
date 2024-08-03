@@ -37,7 +37,7 @@ class Line(Shape):
                 self.intersects(Line(Point(rect.x + rect.w, rect.y), Point(rect.x + rect.w, rect.y + rect.h))) or
                 self.intersects(Line(Point(rect.x, rect.y + rect.h), Point(rect.x + rect.w, rect.y + rect.h))))
 
-    def to_json(self):
+    def to_json(self) -> str:
         """Return a JSON string representation of the line."""
         return json.dumps({
             'type': 'line',

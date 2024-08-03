@@ -9,7 +9,7 @@ from .geometry import Rectangle
 RANDOM_SEED = 42
 
 
-def cluster_rectangles(rects: List[Rectangle], mode='size'):
+def cluster_rectangles(rects: List[Rectangle], mode='size') -> List[Rectangle]:
     """Cluster rectangles by size or distance."""
     if not rects or len(rects) <= 1:
         for rect in rects:

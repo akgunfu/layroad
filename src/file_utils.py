@@ -1,12 +1,13 @@
 import os
-from typing import List
+from typing import List, Tuple
 
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from pdf2image import convert_from_path
 
-from .geometry.shape import Shape
+from .geometry import Rectangle, Line, Shape
+from .image_pipeline import ProcessedImage
 from .utils import add_homebrew_path, Icon, TextColor
 
 # Constants
@@ -26,7 +27,7 @@ LINE_THICKNESS = 5
 DEFAULT_NUM_FILES = 3
 
 
-def load_images(folder_path='assets', num_files=DEFAULT_NUM_FILES):
+def load_images(folder_path='assets', num_files=DEFAULT_NUM_FILES) -> List[Tuple[cv2.typing.MatLike, str]]:
     """Load a limited number of images from the assets folder."""
     add_homebrew_path()
     images_with_names = []
@@ -55,7 +56,7 @@ def load_images(folder_path='assets', num_files=DEFAULT_NUM_FILES):
     return images_with_names
 
 
-def save_result_images(results, max_images, target_file_name):
+def save_result_images(results: List[ProcessedImage], max_images: int, target_file_name: str):
     """Save a plot of the processed images as a PNG file."""
     filtered_results = results[:max_images]
     if target_file_name.lower().endswith(PDF_EXTENSION):
@@ -89,7 +90,7 @@ def save_result_images(results, max_images, target_file_name):
           f" {TextColor.CYAN}{output_filename}{TextColor.RESET}")
 
 
-def _draw_objects(overlay, rects, lines):
+def _draw_objects(overlay: cv2.typing.MatLike, rects: List[Rectangle], lines: List[Line]):
     """Draw rectangles and lines on the image."""
     for rect in rects:
         # draw rectangle
@@ -112,7 +113,7 @@ def _draw_objects(overlay, rects, lines):
     return overlay
 
 
-def save_result_shapes(shapes: List[Shape], target_file_name):
+def save_result_shapes(shapes: List[Shape], target_file_name: str):
     if target_file_name.lower().endswith(PDF_EXTENSION):
         output_filename = target_file_name.replace(PDF_EXTENSION, JSON_EXTENSION)
     else:

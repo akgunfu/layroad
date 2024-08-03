@@ -14,7 +14,7 @@ CONTOUR_APPROX_EPSILON = 0.01
 
 
 class RectangleDetector:
-    def __init__(self, gray_img, original_img, config):
+    def __init__(self, gray_img: cv2.typing.MatLike, original_img: cv2.typing.MatLike, config):
         """Initialize the RectangleDetector class."""
         self.gray_img = gray_img
         self.original_img = original_img
@@ -56,14 +56,14 @@ class RectangleDetector:
         return img
 
     @staticmethod
-    def _detect_edges(img):
+    def _detect_edges(img: cv2.typing.MatLike) -> cv2.typing.MatLike:
         """Detect edges using the Canny edge detection algorithm."""
         median_val = np.median(img)
         lower = int(max(0, 0.24 * median_val))
         upper = int(min(255, 0.96 * median_val))
         return cv2.Canny(img, lower, upper)
 
-    def _find_rects(self, img) -> List[Rectangle]:
+    def _find_rects(self, img: cv2.typing.MatLike) -> List[Rectangle]:
         """Find rectangles in the edge-detected image."""
         area_threshold = self.min_area * (self.upscale_factor ** 2)
         contours, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)

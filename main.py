@@ -1,5 +1,8 @@
 import argparse
 import concurrent.futures
+from typing import Tuple, List
+
+import cv2.typing
 
 from src.config_generator import generate_configs
 from src.file_utils import load_images, save_result_images, save_result_shapes
@@ -7,7 +10,7 @@ from src.image_pipeline import process_image
 from src.utils import create_clean_output_directory, TextColor
 
 
-def process_images(images_with_names, output_dir, max_images):
+def process_images(images_with_names: List[Tuple[cv2.typing.MatLike, str]], output_dir: str, max_images: int):
     """Process a list of images, generate configurations, and save results."""
     configs = generate_configs()
 
@@ -32,13 +35,13 @@ def process_images(images_with_names, output_dir, max_images):
           f"({len(images_with_names)}/{len(images_with_names)})")
 
 
-def process_from_directory(input_dir, output_dir, max_images):
+def process_from_directory(input_dir: str, output_dir: str, max_images: int):
     """Process images from a directory."""
     images_with_names = load_images(input_dir)
     process_images(images_with_names, output_dir, max_images)
 
 
-def process_from_file(file_path, output_dir):
+def process_from_file(file_path: str, output_dir: str):
     """Process a single image file."""
     images_with_names = []  ## todo implement file path
     process_images(images_with_names, output_dir, max_images=len(images_with_names))

@@ -73,7 +73,7 @@ class Rectangle(Shape):
             bound_end = max(self.x, other.x) - discontinuity
         return bound_start, bound_end
 
-    def to_json(self):
+    def to_json(self) -> str:
         """Return a JSON string representation of the rectangle."""
         return json.dumps({
             'type': 'rectangle',

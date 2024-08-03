@@ -1,4 +1,5 @@
 import itertools
+from typing import List
 
 from .image_processing import ENHANCE_CONTRAST, BLUR, EDGE_DETECTION, THRESHOLD, UPSCALE
 
@@ -11,7 +12,7 @@ FAVORITE_CONFIGS = [
 ]
 
 
-def generate_configs(use_favorites=True):
+def generate_configs(use_favorites=True) -> List[dict]:
     """Generate image processing configurations."""
     if use_favorites:  # Use favorite configurations
         return [{'steps': config} for config in [FAVORITE_CONFIGS[1]]]
@@ -19,7 +20,7 @@ def generate_configs(use_favorites=True):
         return [{'steps': config} for config in _get_combinatorial_configs()]
 
 
-def _get_combinatorial_configs():
+def _get_combinatorial_configs() -> List[List[str]]:
     """Generate combinatorial configurations."""
     configs = []
     for ec_count in range(1, 3):

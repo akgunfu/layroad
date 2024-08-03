@@ -1,14 +1,17 @@
 import concurrent.futures
+from typing import List, Tuple
 
 import cv2
 
 from .edge_connect import EdgeConnect
+from .geometry import Line
 from .rectangle_detection import RectangleDetector, Rectangle
 from .utils import Icon, TextColor
 
 
 class ProcessedImage:
-    def __init__(self, original_img, edge_img, label, rects, lines, upscale_factor):
+    def __init__(self, original_img: cv2.typing.MatLike, edge_img: cv2.typing.MatLike, label: str,
+                 rects: List[Rectangle], lines: List[Line], upscale_factor: int):
         """Initialize the processed image with results."""
         self.original_img = original_img
         self.edge_img = edge_img
@@ -20,22 +23,23 @@ class ProcessedImage:
         self.num_rects = len(rects)
 
     @staticmethod
-    def _scale_rectangles(rects, factor):
+    def _scale_rectangles(rects: List[Rectangle], upscale_factor: int) -> List[Rectangle]:
         """Update rectangles for scaling."""
         updated = []
         for rect in rects:
             new_rect = Rectangle(rect.id, rect.x, rect.y, rect.w, rect.h)
-            if factor != 1:
-                new_rect.x = int(rect.x / factor)
-                new_rect.y = int(rect.y / factor)
-                new_rect.w = int(rect.w / factor)
-                new_rect.h = int(rect.h / factor)
+            if upscale_factor != 1:
+                new_rect.x = int(rect.x / upscale_factor)
+                new_rect.y = int(rect.y / upscale_factor)
+                new_rect.w = int(rect.w / upscale_factor)
+                new_rect.h = int(rect.h / upscale_factor)
             new_rect.cluster = rect.cluster
             updated.append(new_rect)
         return updated
 
 
-def _process_single_config(filename, original_img, gray_img, config):
+def _process_single_config(filename: str, original_img: cv2.typing.MatLike, gray_img: cv2.typing.MatLike,
+                           config) -> ProcessedImage:
     """Process a single image configuration."""
     print(f"{Icon.START} [Process] Started processing image {TextColor.YELLOW}{filename}{TextColor.RESET} "
           f"with config {config} ...")
@@ -74,7 +78,7 @@ def _process_single_config(filename, original_img, gray_img, config):
     return ProcessedImage(original_img, edge_img, label, rects, lines, upscale_factor)
 
 
-def process_image(image_file, configs):
+def process_image(image_file: Tuple[cv2.typing.MatLike, str], configs) -> Tuple[str, List[ProcessedImage]]:
     """Process a single image with all configurations in parallel."""
     original_img, filename = image_file
     gray_img = cv2.cvtColor(original_img, cv2.COLOR_BGR2GRAY)

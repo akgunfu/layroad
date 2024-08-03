@@ -1,5 +1,7 @@
 from typing import List, Tuple
 
+import cv2.typing
+
 from .geometry import Line, Point, Rectangle
 
 DISCONTINUITY = 5
@@ -7,7 +9,7 @@ MIN_LINE_LENGTH = 50
 
 
 class EdgeConnect:
-    def __init__(self, edge_img, rectangles: List[Rectangle], upscale_factor: int):
+    def __init__(self, edge_img: cv2.typing.MatLike, rectangles: List[Rectangle], upscale_factor: int):
         """Initialize with edge image, rectangles, specified discontinuity, and minimum line length."""
         self.edge_img = edge_img
         self.rectangles = rectangles
@@ -84,14 +86,15 @@ class EdgeConnect:
         return subranges
 
     @staticmethod
-    def _has_obstacle(edge_img, pos: int, bound_start: int, bound_end: int, axis) -> bool:
+    def _has_obstacle(edge_img: cv2.typing.MatLike, pos: int, bound_start: int, bound_end: int, axis) -> bool:
         """Check for obstacles in the specified range."""
         if axis == 'x':
             return (edge_img[bound_start:bound_end, pos] == 255).any()
         else:
             return (edge_img[pos, bound_start:bound_end] == 255).any()
 
-    def _filter_out_intersecting_lines(self, candidate_lines: list, rect1: Rectangle, rect2: Rectangle) -> List[Line]:
+    def _filter_out_intersecting_lines(self, candidate_lines: List[Line],
+                                       rect1: Rectangle, rect2: Rectangle) -> List[Line]:
         """Filter out lines that intersect with any other rectangle."""
         return [line for line in candidate_lines if not self._line_intersects_any_rectangle(line, rect1, rect2)]
 

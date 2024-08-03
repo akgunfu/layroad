@@ -27,12 +27,12 @@ os.makedirs(PROCESSED_FOLDER, exist_ok=True)
 scheduler = BackgroundScheduler()
 
 
-def allowed_file(filename):
+def allowed_file(filename: str):
     """Check if the file is an allowed type."""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-def cleanup_directory(directory):
+def cleanup_directory(directory: str):
     """Remove all files in the specified directory."""
     for filename in os.listdir(directory):
         file_path = os.path.join(directory, filename)
@@ -89,23 +89,26 @@ def process():
 
 
 @app.route('/processed/<unique_id>/<filename>', methods=['GET'])
-def download(unique_id, filename):
+def download(unique_id: str, filename: str):
     """Endpoint to download a processed file."""
     folder_path = os.path.join(app.config['PROCESSED_FOLDER'], unique_id)
     return send_from_directory(directory=folder_path, path=filename)
 
 
-def _do_process(processed_folder, unique_id):
+def _do_process(processed_folder: str, unique_id: str):
     images_with_names = load_images(app.config['UPLOAD_FOLDER'], num_files=1)
     configs = generate_configs()
-    for image_with_name in images_with_names:
-        processed_filename, results = process_image(image_with_name, configs)
-        json_filename = f"{processed_filename}.json"
-        png_filename = f"{processed_filename}.png"
-        save_result_shapes(results[0].rects + results[0].lines,
-                           target_file_name=os.path.join(processed_folder, json_filename))
-        save_result_images(results, max_images=len(results),
-                           target_file_name=os.path.join(processed_folder, png_filename))
+
+    if len(images_with_names) != 1:
+        raise Exception("Image not loaded")
+
+    filename, results = process_image(images_with_names[0], configs)
+    json_filename = f"{filename}.json"
+    png_filename = f"{filename}.png"
+    save_result_shapes(results[0].rects + results[0].lines,
+                       target_file_name=os.path.join(processed_folder, json_filename))
+    save_result_images(results, max_images=len(results),
+                       target_file_name=os.path.join(processed_folder, png_filename))
     # Construct the download URL
     image_url = url_for('download', unique_id=unique_id, filename=png_filename, _external=True)
     shapes_url = url_for('download', unique_id=unique_id, filename=json_filename, _external=True)
