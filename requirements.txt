@@ -4,3 +4,5 @@ kneed
 opencv-python
 matplotlib
 pdf2image
+flask
+APscheduler
