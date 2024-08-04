@@ -100,7 +100,7 @@ class RectangleDetector:
             for j, other in enumerate(rects):
                 if i == j:  # Skip self-comparison by comparing indices
                     continue
-                if rect.is_identical(other):
+                if rect == other:
                     if i < j:  # Skip the second occurrence
                         continue
                     else:
