@@ -7,7 +7,7 @@ from .geometry import Line, Point, Rectangle, Shape
 LINE_DISCONTINUITY = 10  # must be > 0 , or else all lines could be filtered out
 SPAN_DISCONTINUITY = 10
 MIN_SPAN_LENGTH = 15
-MIN_LINE_LENGTH = 60
+MIN_LINE_LENGTH = 50
 
 
 class EdgeConnect:
@@ -23,12 +23,14 @@ class EdgeConnect:
 
     def connect(self) -> List[Line]:
         rtr_lines = self._create_lines_between_shapes(self.rectangles, self.rectangles)
-        ltl_lines = self._create_lines_between_shapes(rtr_lines, rtr_lines)
+        rtrtr_lines = self._create_lines_between_shapes(rtr_lines, rtr_lines)
+        ltl_lines = self._create_lines_between_shapes(rtr_lines, rtrtr_lines + rtr_lines)
+        rtltl_lines = self._create_lines_between_shapes(self.rectangles, rtr_lines + rtrtr_lines + ltl_lines)
         # todo create line->line connection lines
         # todo create rect->line connection lines
         # todo create line intersection nodes
         # todo prune very close near identical lines
-        lines = rtr_lines + ltl_lines
+        lines = rtr_lines + rtrtr_lines + ltl_lines + rtltl_lines
         lines = self._filter_nested_lines(lines)
         return lines
 

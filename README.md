@@ -114,3 +114,16 @@ The server script, `server.py`, allows for uploading and processing files via a 
 
 2. **Error: `FileNotFoundError: Image not found`**
     - Solution: Ensure the image file paths are correct and the files exist in the specified directory.
+
+## Documentation (In Progress)
+
+### Rectangle Detection
+
+### Line Detection
+
+![Shapes](docs/images/shapes.png)
+![Ranges](docs/images/ranges.png)
+![Obstacle Scan](docs/images/obstacle_scan.png)
+![Obstacle Scan](docs/images/discontinuity.png)
+![Obstacle Scan](docs/images/drawing.png)
+![Obstacle Scan](docs/images/converging_span.png)

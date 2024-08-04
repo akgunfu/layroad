@@ -53,6 +53,8 @@ def load_images(folder_path='assets', num_files=DEFAULT_NUM_FILES) -> List[Tuple
             images_with_names.append((image, filename))
             file_count += 1
             print(f"{Icon.DONE} [Import] Loaded image file {TextColor.YELLOW}{filename}{TextColor.RESET}")
+        else:
+            print(f"{Icon.ERROR} [Import] Not a valid file {TextColor.YELLOW}{filename}{TextColor.RESET}")
     return images_with_names
 
 
