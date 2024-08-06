@@ -56,7 +56,7 @@ if __name__ == '__main__':
                         help='Directory containing input images')
     parser.add_argument('-o', '--output_dir', type=str, default='outputs',
                         help='Directory to save output images and shapes')
-    parser.add_argument('-m', '--max_images', type=int, default=3,
+    parser.add_argument('-m', '--max_images', type=int, default=1,
                         help='Maximum number of images to process')
     parser.add_argument('-f', '--file_path', type=str, default=None,
                         help='Path to the input image file')
@@ -76,6 +76,6 @@ if __name__ == '__main__':
         # Set default values for processing from a default directory with default parameters
         default_input_dir = 'default_inputs'
         default_output_dir = 'default_outputs'
-        default_max_images = 4
+        default_max_images = 1
 
         process_from_directory(default_input_dir, default_output_dir, default_max_images)
