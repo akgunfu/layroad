@@ -3,8 +3,8 @@ from typing import List, Tuple
 
 import cv2
 
-from .edge_connect import EdgeConnect
 from .geometry import Line
+from .line_generator import LineGenerator
 from .rectangle_detection import RectangleDetector, Rectangle
 from .utils import Icon, TextColor
 
@@ -47,7 +47,7 @@ def _process_single_config(filename: str, original_img: cv2.typing.MatLike, gray
     edge_img, rects, upscale_factor = detector.detect()
     print(f"{Icon.DETECT} [Detection] {TextColor.GREEN}Detected {len(rects)} rectangles{TextColor.RESET} "
           f"for image {TextColor.YELLOW}{filename}{TextColor.RESET} with config {config}")
-    lines = EdgeConnect(edge_img, rects, upscale_factor).connect()
+    lines = LineGenerator(edge_img, rects, upscale_factor).generate()
     print(f"{Icon.DETECT} [Detection] {TextColor.GREEN}Detected {len(lines)} lines{TextColor.RESET} "
           f"for image {TextColor.YELLOW}{filename}{TextColor.RESET} with config {config}")
     #

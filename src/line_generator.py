@@ -10,7 +10,7 @@ MIN_SPAN_LENGTH = 10
 MIN_LINE_LENGTH = 75
 
 
-class EdgeConnect:
+class LineGenerator:
     def __init__(self, edge_img: cv2.typing.MatLike, rectangles: List[Rectangle], upscale_factor: int):
         """Initialize with edge image, rectangles, specified discontinuity, and minimum line length."""
         self.edge_img = edge_img
@@ -21,7 +21,7 @@ class EdgeConnect:
         self.min_line_length = MIN_LINE_LENGTH * upscale_factor
         self.converged_spans = {'x': [], 'y': []}
 
-    def connect(self) -> List[Line]:
+    def generate(self) -> List[Line]:
         r1 = self._create_lines_between_shapes(self.rectangles, self.rectangles)
         r2 = self._create_lines_between_shapes(self.rectangles, r1)
         r3 = self._create_lines_between_shapes(self.rectangles, r2)
