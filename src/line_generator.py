@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import cv2.typing
 
@@ -138,7 +138,7 @@ class LineGenerator:
 
     @staticmethod
     def find_inner_subrange(checked_subrange: Tuple[int, int],
-                            condensed_subranges: List[Tuple[int, int]]) -> Tuple[int, int]:
+                            condensed_subranges: List[Tuple[int, int]]) -> Union[tuple[int, int], tuple[None, None]]:
         """
         Given a larger subrange and a list of condensed subranges,
         return the first subrange that is completely within the larger subrange.

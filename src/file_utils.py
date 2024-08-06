@@ -6,25 +6,31 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pdf2image import convert_from_path
 
-from .geometry import Rectangle, Line, Shape
+from .geometry import Rectangle, Line, Shape, Node
 from .image_pipeline import ProcessedImage
 from .utils import add_homebrew_path, Icon, TextColor
 
-# Constants
 INPUT_DPI = 500
 OUTPUT_DPI = 1000
+DEFAULT_NUM_FILES = 3
+DEFAULT_OUTPUT_FILE = 'output.png'
+#
 PNG_EXTENSION = '.png'
 PDF_EXTENSION = '.pdf'
 JPEG_EXTENSION = '.jpeg'
 JPG_EXTENSION = '.jpg'
 JSON_EXTENSION = '.json'
-DEFAULT_OUTPUT_FILE = 'output.png'
 IMAGE_EXTENSIONS = (PNG_EXTENSION, JPG_EXTENSION, JPEG_EXTENSION)
+#
 COLOR_RECTANGLE = (255, 49, 49)
 COLOR_LINE = (170, 255, 0)
 COLOR_TEXT = (0, 0, 0)
+FILL_THICKNESS = -1
 LINE_THICKNESS = 3
-DEFAULT_NUM_FILES = 3
+TRAVEL_NODE_COLOR = (255, 255, 255)
+TRAVEL_NODE_RADIUS = 15
+TERMINAL_NODE_COLOR = (0, 150, 255)
+TERMINAL_NODE_RADIUS = 45
 
 
 def load_images(folder_path='assets', num_files=DEFAULT_NUM_FILES) -> List[Tuple[cv2.typing.MatLike, str]]:
@@ -74,11 +80,11 @@ def save_result_images(results: List[ProcessedImage], max_images: int, target_fi
     num_cols = int(np.ceil(np.sqrt(max_images)))
     num_rows = int(np.ceil(num_images / num_cols))
     plt.figure(figsize=(num_cols * 5, num_rows * 5), dpi=OUTPUT_DPI)
-    font_size = np.ceil(48 / (num_cols + 1))
+    font_size = 48 // (num_cols + 3)
 
     for i, result in enumerate(filtered_results):
         overlay = cv2.cvtColor(result.edge_img, cv2.COLOR_BGR2RGB)
-        overlay = _draw_objects(overlay, result.rects, result.lines)
+        overlay = _draw_objects(overlay, result.rects, result.lines, result.nodes)
         plt.subplot(num_rows, num_cols, i + 1)
         plt.imshow(overlay)
         plt.title(result.label, fontsize=font_size)
@@ -92,11 +98,11 @@ def save_result_images(results: List[ProcessedImage], max_images: int, target_fi
           f" {TextColor.CYAN}{output_filename}{TextColor.RESET}")
 
 
-def _draw_objects(overlay: cv2.typing.MatLike, rects: List[Rectangle], lines: List[Line]):
+def _draw_objects(overlay: cv2.typing.MatLike, rects: List[Rectangle], lines: List[Line], nodes: List[Node]):
     """Draw rectangles and lines on the image."""
     for rect in rects:
         # draw rectangle
-        cv2.rectangle(overlay, (rect.x, rect.y), (rect.x + rect.w, rect.y + rect.h), COLOR_RECTANGLE, -1)
+        cv2.rectangle(overlay, (rect.x, rect.y), (rect.x + rect.w, rect.y + rect.h), COLOR_RECTANGLE, LINE_THICKNESS)
         # draw text in the center of rectangle
         text = str(rect.id)
         # Calculate font scale based on rectangle dimensions
@@ -108,10 +114,16 @@ def _draw_objects(overlay: cv2.typing.MatLike, rects: List[Rectangle], lines: Li
         text_x = center_x - text_size[0] // 2
         text_y = center_y + text_size[1] // 2
         # Write index number at the center of the rectangle
-        cv2.putText(overlay, text, (text_x, text_y), font, font_scale, COLOR_TEXT, LINE_THICKNESS, lineType=cv2.LINE_AA)
-
+        cv2.putText(overlay, text, (text_x, text_y), font, font_scale, COLOR_TEXT, LINE_THICKNESS,
+                    lineType=cv2.LINE_AA)
+    #
     for line in lines:
         cv2.line(overlay, (line.start.x, line.start.y), (line.end.x, line.end.y), COLOR_LINE, LINE_THICKNESS)
+    #
+    for node in nodes:
+        color = TRAVEL_NODE_COLOR if not node.connection else TERMINAL_NODE_COLOR
+        radius = TRAVEL_NODE_RADIUS if not node.connection else TERMINAL_NODE_RADIUS
+        cv2.circle(overlay, (node.pos.x, node.pos.y), radius, color, FILL_THICKNESS)
     return overlay
 
 

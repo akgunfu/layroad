@@ -62,6 +62,8 @@ def process():
     if file.filename == '':
         return jsonify(error="No selected file"), 400
 
+    create_clean_output_directory(UPLOAD_FOLDER)
+
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
@@ -105,7 +107,7 @@ def _do_process(processed_folder: str, unique_id: str):
     filename, results = process_image(images_with_names[0], configs)
     json_filename = f"{filename}.json"
     png_filename = f"{filename}.png"
-    save_result_shapes(results[0].rects + results[0].lines,
+    save_result_shapes(results[0].rects + results[0].lines + results[0].nodes,
                        target_file_name=os.path.join(processed_folder, json_filename))
     save_result_images(results, max_images=len(results),
                        target_file_name=os.path.join(processed_folder, png_filename))

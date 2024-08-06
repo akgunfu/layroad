@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Tuple
+from typing import Tuple, Union
 
 from .point import Point
 
@@ -17,10 +17,17 @@ class Shape(ABC):
     def __hash__(self):
         return hash((self.pos.x, self.pos.y, self.width, self.height))
 
+    @abstractmethod
+    def identifier(self):
+        pass
+
+    def distance(self, other: 'Shape') -> float:
+        return abs(self.pos.x - other.pos.x) + abs(self.pos.y - other.pos.y)
+
     def bounds(self) -> Tuple[int, int, int, int]:
         return self.pos.x, self.pos.x + self.width, self.pos.y, self.pos.y + self.height
 
-    def has_spanning_axis(self, other: 'Shape') -> Tuple[bool, str]:
+    def has_spanning_axis(self, other: 'Shape') -> Union[tuple[bool, str], tuple[bool, None]]:
         if max(self.pos.x, other.pos.x) < min(self.pos.x + self.width, other.pos.x + other.width):
             return True, 'x'
         elif max(self.pos.y, other.pos.y) < min(self.pos.y + self.height, other.pos.y + other.height):

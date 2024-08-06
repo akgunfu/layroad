@@ -19,6 +19,9 @@ class Rectangle(Shape):
         """Allow unpacking rectangle attributes."""
         return iter((self.x, self.y, self.w, self.h))
 
+    def identifier(self):
+        return f'R{self.id}'
+
     def size(self) -> int:
         """Calculate the size of the rectangle."""
         return self.w * self.h
@@ -26,6 +29,10 @@ class Rectangle(Shape):
     def center(self) -> 'Point':
         """Calculate the centroid (middle point) of the rectangle."""
         return Point(self.x + self.w // 2, self.y + self.h // 2)
+
+    def contains(self, point: Point) -> bool:
+        """Check if the rectangle contains the given point."""
+        return self.x <= point.x <= self.x + self.w and self.y <= point.y <= self.y + self.h
 
     def set_cluster(self, cluster):
         """Set the cluster ID for the rectangle."""
@@ -36,8 +43,8 @@ class Rectangle(Shape):
         return json.dumps({
             'type': 'rectangle',
             'id': self.id,
-            'x': self.x,
-            'y': self.y,
+            'x': self.pos.x,
+            'y': self.pos.y,
             'w': self.w,
             'h': self.h
         })

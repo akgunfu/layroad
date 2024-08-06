@@ -3,23 +3,26 @@ from typing import List, Tuple
 
 import cv2
 
-from .geometry import Line
+from .geometry import Line, Node, Rectangle
 from .line_generator import LineGenerator
-from .rectangle_detection import RectangleDetector, Rectangle
+from .node_generator import NodeGenerator
+from .rectangle_detection import RectangleDetector
 from .utils import Icon, TextColor
 
 
 class ProcessedImage:
     def __init__(self, original_img: cv2.typing.MatLike, edge_img: cv2.typing.MatLike, label: str,
-                 rects: List[Rectangle], lines: List[Line], upscale_factor: int):
+                 rects: List[Rectangle], lines: List[Line], nodes: List[Node], upscale_factor: int):
         """Initialize the processed image with results."""
         self.original_img = original_img
         self.edge_img = edge_img
         self.label = label
         self.rects = rects
-        self.upscale_factor = upscale_factor
-        self.upscaled_rects = self._scale_rectangles(rects, upscale_factor)
         self.lines = lines
+        self.nodes = nodes
+        self.upscale_factor = upscale_factor
+        # self.upscaled_rects = self._scale_rectangles(rects, upscale_factor)
+
         self.num_rects = len(rects)
 
     @staticmethod
@@ -50,7 +53,10 @@ def _process_single_config(filename: str, original_img: cv2.typing.MatLike, gray
     lines = LineGenerator(edge_img, rects, upscale_factor).generate()
     print(f"{Icon.DETECT} [Detection] {TextColor.GREEN}Detected {len(lines)} lines{TextColor.RESET} "
           f"for image {TextColor.YELLOW}{filename}{TextColor.RESET} with config {config}")
-    #
+    nodes = NodeGenerator(rects, lines).generate()
+    print(f"{Icon.DETECT} [Detection] {TextColor.GREEN}Detected {len(nodes)} nodes{TextColor.RESET} "
+          f"for image {TextColor.YELLOW}{filename}{TextColor.RESET} with config {config}")
+
     if lines:
         smallest_line_length = min(line.length() for line in lines)
         smallest_line_count = sum(1 for line in lines if line.length() <= 1.1 * smallest_line_length)
@@ -75,7 +81,7 @@ def _process_single_config(filename: str, original_img: cv2.typing.MatLike, gray
 
     print(f"{Icon.DONE} [Process] Finished processing image {TextColor.YELLOW}{filename}{TextColor.RESET} "
           f"with config {config}")
-    return ProcessedImage(original_img, edge_img, label, rects, lines, upscale_factor)
+    return ProcessedImage(original_img, edge_img, label, rects, lines, nodes, upscale_factor)
 
 
 def process_image(image_file: Tuple[cv2.typing.MatLike, str], configs) -> Tuple[str, List[ProcessedImage]]:

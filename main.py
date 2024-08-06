@@ -23,7 +23,8 @@ def process_images(images_with_names: List[Tuple[cv2.typing.MatLike, str]], outp
     best_responses = []
     for future in concurrent.futures.as_completed(futures):
         filename, results = future.result()
-        save_result_shapes(results[0].rects + results[0].lines, target_file_name=f'{output_dir}/shapes/{filename}')
+        save_result_shapes(results[0].rects + results[0].lines + results[0].nodes,
+                           target_file_name=f'{output_dir}/shapes/{filename}')
         save_result_images(results, max_images=max_images, target_file_name=f'{output_dir}/images/{filename}')
         best_responses.append(results[0])
     if len(best_responses) <= 1:
