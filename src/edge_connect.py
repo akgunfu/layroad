@@ -4,10 +4,10 @@ import cv2.typing
 
 from .geometry import Line, Point, Rectangle, Shape
 
-LINE_DISCONTINUITY = 10  # must be > 0 , or else all lines could be filtered out
+LINE_DISCONTINUITY = 5  # must be > 0 , or else all lines could be filtered out
 SPAN_DISCONTINUITY = 10
-MIN_SPAN_LENGTH = 15
-MIN_LINE_LENGTH = 50
+MIN_SPAN_LENGTH = 10
+MIN_LINE_LENGTH = 75
 
 
 class EdgeConnect:
@@ -19,20 +19,19 @@ class EdgeConnect:
         self.span_discontinuity = SPAN_DISCONTINUITY * upscale_factor
         self.min_span_length = MIN_SPAN_LENGTH * upscale_factor
         self.min_line_length = MIN_LINE_LENGTH * upscale_factor
-        self.subranges_dict = {'x': [], 'y': []}
+        self.converged_spans = {'x': [], 'y': []}
 
     def connect(self) -> List[Line]:
-        rtr_lines = self._create_lines_between_shapes(self.rectangles, self.rectangles)
-        rtrtr_lines = self._create_lines_between_shapes(rtr_lines, rtr_lines)
-        ltl_lines = self._create_lines_between_shapes(rtr_lines, rtrtr_lines + rtr_lines)
-        rtltl_lines = self._create_lines_between_shapes(self.rectangles, rtr_lines + rtrtr_lines + ltl_lines)
+        r1 = self._create_lines_between_shapes(self.rectangles, self.rectangles)
+        r2 = self._create_lines_between_shapes(self.rectangles, r1)
+        r3 = self._create_lines_between_shapes(self.rectangles, r2)
+        rr = self._filter_nested_lines(r1 + r2 + r3)
+        r4 = self._create_lines_between_shapes(rr, rr)
         # todo create line->line connection lines
         # todo create rect->line connection lines
         # todo create line intersection nodes
         # todo prune very close near identical lines
-        lines = rtr_lines + rtrtr_lines + ltl_lines + rtltl_lines
-        lines = self._filter_nested_lines(lines)
-        return lines
+        return self._filter_nested_lines(r1 + r2 + r3 + r4)
 
     @staticmethod
     def _filter_nested_lines(lines):
@@ -52,90 +51,89 @@ class EdgeConnect:
     def _create_lines_between_shapes(self, _from_list: List[Shape], _to_list: List[Shape]) -> List[Line]:
         """Create direct lines between shapes."""
         # todo refactor
+        self._preview_and_update_converged_spans(_from_list, _to_list)
         lines = []
-        global_subranges_dict = {'x': [], 'y': []}
-        for _from in _from_list:
-            local_ranges_dict = {'x': [], 'y': []}
-            for _to in _to_list:
-                if _from == _to:
-                    continue
-                has_shared_axis, shared_axis = _from.has_spanning_axis(_to)
-                if has_shared_axis:
-                    uninterrupted_subranges = self._find_uninterrupted_subranges(_to, _from, shared_axis)
-                    if len(uninterrupted_subranges) == 0:
-                        continue
-                    if isinstance(_from, Rectangle) or isinstance(_to, Rectangle):
-                        uninterrupted_subranges = [uninterrupted_subranges[len(uninterrupted_subranges) // 2]]
-                    for subrange in uninterrupted_subranges:
-                        start, end = subrange
-                        midpoint = (start + end) // 2
-                        line = self._get_line(midpoint, _to, _from, shared_axis)
-                        if line and line.length() >= self.min_line_length:
-                            local_ranges_dict[shared_axis].append(subrange)
-            #
-            global_subranges_dict['x'] += self.condense_subranges(local_ranges_dict['x'])
-            global_subranges_dict['y'] += self.condense_subranges(local_ranges_dict['y'])
-
-        self.subranges_dict['x'] += self.condense_subranges(global_subranges_dict['x'])
-        self.subranges_dict['y'] += self.condense_subranges(global_subranges_dict['y'])
-        #
-        self.subranges_dict['x'] = self.condense_subranges(self.subranges_dict['x'])
-        _new_x = [((start + end) // 2, (start + end) // 2) for start, end in self.subranges_dict['x']]
-        self.subranges_dict['x'] = _new_x
-        #
-        self.subranges_dict['y'] = self.condense_subranges(self.subranges_dict['y'])
-        _new_y = [((start + end) // 2, (start + end) // 2) for start, end in self.subranges_dict['y']]
-        self.subranges_dict['y'] = self.condense_subranges(self.subranges_dict['y'])
-
         for _from in _to_list:
             for _to in _to_list:
                 if _from == _to:
                     continue
 
                 has_shared_axis, shared_axis = _from.has_spanning_axis(_to)
-                if has_shared_axis:
-                    subranges = self._find_uninterrupted_subranges(_to, _from, shared_axis)
-                    if len(subranges) == 0:
-                        continue
-                    if isinstance(_from, Rectangle) or isinstance(_to, Rectangle):
-                        subranges = [subranges[len(subranges) // 2]]
-                    for subrange in subranges:
-                        start, end = self.find_inner_subrange(subrange, self.subranges_dict[shared_axis])
-                        if start and end:
-                            midpoint = (start + end) // 2
-                            line = self._get_line(midpoint, _to, _from, shared_axis)
-                            if line and line.length() >= self.min_line_length:
-                                lines.append(line)
+                if not has_shared_axis:
+                    continue
+
+                spans = self._get_spans(_from, _to, shared_axis)
+                for span in spans:
+                    start, end = self.find_inner_subrange(span, self.converged_spans[shared_axis])
+                    if start and end:
+                        midpoint = (start + end) // 2
+                        line = self._get_line(midpoint, _to, _from, shared_axis)
+                        if line and line.length() >= self.min_line_length:
+                            lines.append(line)
 
         return self._filter_nested_lines(list(set(lines)))
 
-    @staticmethod
-    def condense_subranges(subranges: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
-        """Condense subranges by intersecting overlapping subranges and keeping non-overlapping subranges."""
-        # Sort subranges by their start position and then by their end position
-        subranges.sort(key=lambda x: (x[0], x[1]))
+    def _preview_and_update_converged_spans(self, _from_list, _to_list):
+        iteration_spans_dict = {'x': [], 'y': []}
+        for _from in _from_list:
+            shape_spans_dict = {'x': [], 'y': []}
+            for _to in _to_list:
+                if _from == _to:
+                    continue
 
+                has_shared_axis, shared_axis = _from.has_spanning_axis(_to)
+                if not has_shared_axis:
+                    continue
+                shape_spans_dict[shared_axis] += self._get_spans(_from, _to, shared_axis)
+            iteration_spans_dict['x'] += self.converge_spans(shape_spans_dict['x'])
+            iteration_spans_dict['y'] += self.converge_spans(shape_spans_dict['y'])
+        self.converged_spans['x'] += self.converge_spans(iteration_spans_dict['x'])
+        self.converged_spans['y'] += self.converge_spans(iteration_spans_dict['y'])
+        #
+        self.converged_spans['x'] = self.converge_spans(self.converged_spans['x'])
+        _new_x = [((start + end) // 2, (start + end) // 2) for start, end in self.converged_spans['x']]
+        self.converged_spans['x'] = _new_x
+        #
+        self.converged_spans['y'] = self.converge_spans(self.converged_spans['y'])
+        _new_y = [((start + end) // 2, (start + end) // 2) for start, end in self.converged_spans['y']]
+        self.converged_spans['y'] = self.converge_spans(self.converged_spans['y'])
+
+    def _get_spans(self, _from, _to, shared_axis):
+        spans = self._find_uninterrupted_spans(_to, _from, shared_axis)
+        if not spans:
+            return spans
+        if isinstance(_from, Rectangle) or isinstance(_to, Rectangle):
+            length = len(spans)
+            if length % 2 != 0:
+                middle_index = (length - 1) // 2
+            else:
+                middle_index = length // 2
+            return [spans[middle_index]]
+        return spans
+
+    @staticmethod
+    def converge_spans(spans: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
+        """Condense spans by intersecting overlapping spans and keeping non-overlapping spans."""
+        # Sort spans by their start position and then by their end position
+        spans.sort(key=lambda x: (x[0], x[1]))
         condensed = []
-        for current_start, current_end in subranges:
-            # If the condensed list is empty, add the current subrange
+        for current_start, current_end in spans:
+            # If the condensed list is empty, add the current span
             if not condensed:
                 condensed.append((current_start, current_end))
                 continue
-
             last_start, last_end = condensed[-1]
-
-            # If the current subrange is completely inside the last added subrange, replace the last one
+            # If the current span is completely inside the last added span, replace the last one
             if current_start >= last_start and current_end <= last_end:
                 condensed[-1] = (current_start, current_end)
-            # If the current subrange does not overlap with the last added subrange, add it to the list
+            # If the current span does not overlap with the last added span, add it to the list
             elif current_start >= last_end:
                 condensed.append((current_start, current_end))
-            # For overlapping ranges, add their intersection
+            # For overlapping spans, add their intersection
             else:
                 intersect_start = max(current_start, last_start)
                 intersect_end = min(current_end, last_end)
                 condensed.append((intersect_start, intersect_end))
-
         return list(set(condensed))
 
     @staticmethod
@@ -163,7 +161,7 @@ class EdgeConnect:
             point2 = Point(end_x_2, midpoint) if start_x_2 < start_x_1 else Point(start_x_2, midpoint)
         return Line(point1, point2)
 
-    def _find_uninterrupted_subranges(self, shape1: Shape, shape2: Shape, axis) -> List[Tuple[int, int]]:
+    def _find_uninterrupted_spans(self, shape1: Shape, shape2: Shape, axis) -> List[Tuple[int, int]]:
         """Find uninterrupted subranges between two rectangles, considering obstacles."""
         subranges = []
         in_uninterrupted_range = True

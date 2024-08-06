@@ -26,7 +26,9 @@ def process_images(images_with_names: List[Tuple[cv2.typing.MatLike, str]], outp
         save_result_shapes(results[0].rects + results[0].lines, target_file_name=f'{output_dir}/shapes/{filename}')
         save_result_images(results, max_images=max_images, target_file_name=f'{output_dir}/images/{filename}')
         best_responses.append(results[0])
-    # Sort overall best results based on the number of rectangles detected
+    if len(best_responses) <= 1:
+        return
+        # Sort overall best results based on the number of rectangles detected
     best_responses.sort(key=lambda x: x.num_rects, reverse=True)
     save_result_images(best_responses, max_images=len(best_responses),
                        target_file_name=f'{output_dir}/images/output.png')

@@ -15,7 +15,7 @@ FAVORITE_CONFIGS = [
 def generate_configs(use_favorites=True) -> List[dict]:
     """Generate image processing configurations."""
     if use_favorites:  # Use favorite configurations
-        return [{'steps': config} for config in [FAVORITE_CONFIGS[1]]]
+        return [{'steps': config} for config in [FAVORITE_CONFIGS[2]]]
     else:  # Generate combinatorial configurations
         return [{'steps': config} for config in _get_combinatorial_configs()]
 
