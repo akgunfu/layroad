@@ -20,18 +20,16 @@ class LineGenerator:
         self.min_span_length = MIN_SPAN_LENGTH * upscale_factor
         self.min_line_length = MIN_LINE_LENGTH * upscale_factor
         self.converged_spans = {'x': [], 'y': []}
+        self.converged_midpoints = {'x': [], 'y': []}
 
     def generate(self) -> List[Line]:
         r1 = self._create_lines_between_shapes(self.rectangles, self.rectangles)
-        r2 = self._create_lines_between_shapes(self.rectangles, r1)
-        r3 = self._create_lines_between_shapes(self.rectangles, r2)
-        rr = self._filter_nested_lines(r1 + r2 + r3)
-        r4 = self._create_lines_between_shapes(rr, rr)
+        r2 = self._create_lines_between_shapes(r1, r1)
         # todo create line->line connection lines
         # todo create rect->line connection lines
         # todo create line intersection nodes
         # todo prune very close near identical lines
-        return self._filter_nested_lines(r1 + r2 + r3 + r4)
+        return self._filter_nested_lines(r1 + r2)
 
     @staticmethod
     def _filter_nested_lines(lines):
@@ -46,6 +44,7 @@ class LineGenerator:
                     break
             if not contained:
                 filtered.append(line1)
+        print(f"[LineGenerator] Pruned {len(lines) - len(filtered)} lines")
         return filtered
 
     def _create_lines_between_shapes(self, _from_list: List[Shape], _to_list: List[Shape]) -> List[Line]:
@@ -64,7 +63,7 @@ class LineGenerator:
 
                 spans = self._get_spans(_from, _to, shared_axis)
                 for span in spans:
-                    start, end = self.find_inner_subrange(span, self.converged_spans[shared_axis])
+                    start, end = self.find_inner_subrange(span, self.converged_midpoints[shared_axis])
                     if start and end:
                         midpoint = (start + end) // 2
                         line = self._get_line(midpoint, _to, _from, shared_axis)
@@ -91,12 +90,12 @@ class LineGenerator:
         self.converged_spans['y'] += self.converge_spans(iteration_spans_dict['y'])
         #
         self.converged_spans['x'] = self.converge_spans(self.converged_spans['x'])
-        _new_x = [((start + end) // 2, (start + end) // 2) for start, end in self.converged_spans['x']]
-        self.converged_spans['x'] = _new_x
+        self.converged_spans['y'] = self.converge_spans(self.converged_spans['y'])
         #
-        self.converged_spans['y'] = self.converge_spans(self.converged_spans['y'])
+        _new_x = [((start + end) // 2, (start + end) // 2) for start, end in self.converged_spans['x']]
+        self.converged_midpoints['x'] = _new_x
         _new_y = [((start + end) // 2, (start + end) // 2) for start, end in self.converged_spans['y']]
-        self.converged_spans['y'] = self.converge_spans(self.converged_spans['y'])
+        self.converged_midpoints['y'] = _new_y
 
     def _get_spans(self, _from, _to, shared_axis):
         spans = self._find_uninterrupted_spans(_to, _from, shared_axis)
