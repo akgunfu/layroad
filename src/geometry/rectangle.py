@@ -5,10 +5,13 @@ from .shape import Shape
 
 
 class Rectangle(Shape):
-    def __init__(self, idx: int, x: int, y: int, w: int, h: int):
+    _id_counter = 1
+
+    def __init__(self, x: int, y: int, w: int, h: int):
         """Initialize a Rectangle with given attributes."""
         super().__init__(Point(x, y), w, h)
-        self.id = idx
+        self.id = Rectangle._id_counter
+        Rectangle._id_counter += 1
         self.x = x
         self.y = y
         self.w = w

@@ -6,3 +6,4 @@ matplotlib
 pdf2image
 flask
 APscheduler
+networkx

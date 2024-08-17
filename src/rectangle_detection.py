@@ -79,7 +79,7 @@ class RectangleDetector:
                     ratio = max(w, h) / min(w, h)
                     if ratio >= 3:
                         continue
-                    rects.append(Rectangle(idx=counter, x=x, y=y, w=w, h=h))
+                    rects.append(Rectangle(x=x, y=y, w=w, h=h))
                     counter += 1
         return rects
 
